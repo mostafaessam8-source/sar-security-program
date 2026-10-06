@@ -16,7 +16,10 @@
 ## Structure
 - WBS: Project > Railway > Station > EPC phase (Engineering, Procurement, Construction, Commissioning and handover) > design stage / package > area.
 - Activity codes: EPC phase, Area, Station, Railway, Discipline, Responsibility, Payment milestone, Design stage, Submittal or approval, Priority.
-- Resources: COST-SAR (Material, cost, total SAR 62,000,000) and PROG-WT (Non-labor, progress points, 100,000 = 100%, price 0). Each task has both. Milestones have none. Activity % complete type is Physical for every activity (project default too), so you enter physical % per activity. PROG-WT still carries the progress weight that drives the earned-value progress S-curve.
+- Resources (each task has both; milestones have none):
+  - PROG-WT (Non-labor, price 1): progress value in SAR = progress share x 62,000,000. It carries the budget, so earned value, CPI and SPI are in SAR on the fair EPC progress distribution.
+  - COST-SAR (Material, price 0): contract-condition cost quantity in SAR (total 62,000,000). To see the payment-condition cost curve instead, set COST-SAR price to 1 and PROG-WT to 0.
+  - Activity % complete type is Physical for every activity, so enter physical % per activity.
 - Calendar: Sunday to Thursday, 8 h/day, with KSA holidays.
 
 ## Change the project start (1 Nov 2026)
