@@ -1,0 +1,126 @@
+"""Core schedule model for the SAR Passengers' Security Checking programme.
+Builds WBS, activities, logic, costs (contract payment milestones x BOQ station value) and progress weights,
+then runs a calendar-aware CPM (Sun-Thu working week, KSA holidays) so every date is logic-driven.
+"""
+import json, math, datetime as dt
+from collections import OrderedDict, defaultdict
+
+START = dt.date(2026, 11, 1)           # NTP milestone (editable in P6 by changing project planned start)
+PO = 62_000_000
+LINES = {'NSR': dict(name='North South Railway'), 'EWR': dict(name='East West Railway'), 'HHR': dict(name='Haramain High Speed Rail')}
+SHARED = {'NSR': 487852 + 4387225 + 203241 + 394476 + 38716 + 483756,
+          'EWR': 310926 + 2800750 + 203241 + 382873 + 67751 + 259632,
+          'HHR': 1057094 + 9469993 + 203241 + 548785 + 67751 + 1375764}
+SHARED_PARTS = {'NSR': dict(design=487852, pm=4387225, fat=203241, spares=394476, training=38716, cloud=483756),
+                'EWR': dict(design=310926, pm=2800750, fat=203241, spares=382873, training=67751, cloud=259632),
+                'HHR': dict(design=1057094, pm=9469993, fat=203241, spares=548785, training=67751, cloud=1375764)}
+CODE = {'NSR-RYD': 'NRY', 'NSR-MAJ': 'NMJ', 'NSR-QAS': 'NQS', 'NSR-HAI': 'NHL', 'NSR-JOU': 'NJF', 'NSR-QUR': 'NQR',
+        'EWR-RYD': 'ERY', 'EWR-DAM': 'EDM', 'EWR-HUF': 'EHF', 'EWR-ABQ': 'EAB',
+        'HHR-JED': 'HJD', 'HHR-KAE': 'HKA', 'HHR-MAK': 'HMK', 'HHR-MAD': 'HMD'}
+
+# ------------------------------------------------------------------ calendar
+HOLIDAYS = [  # (start, end, label) inclusive; Sun-Thu working week handled separately. Eid dates are ESTIMATES.
+    (dt.date(2027, 2, 22), dt.date(2027, 2, 22), 'Founding Day'),
+    (dt.date(2027, 3, 7), dt.date(2027, 3, 11), 'Eid al-Fitr (estimated)'),
+    (dt.date(2027, 5, 16), dt.date(2027, 5, 20), 'Eid al-Adha (estimated)'),
+    (dt.date(2027, 9, 23), dt.date(2027, 9, 23), 'National Day'),
+    (dt.date(2028, 2, 20), dt.date(2028, 2, 24), 'Eid al-Fitr (estimated)'),
+    (dt.date(2028, 2, 22), dt.date(2028, 2, 22), 'Founding Day'),
+    (dt.date(2028, 4, 30), dt.date(2028, 5, 4), 'Eid al-Adha (estimated)'),
+    (dt.date(2028, 9, 23), dt.date(2028, 9, 23), 'National Day'),
+    (dt.date(2029, 2, 11), dt.date(2029, 2, 15), 'Eid al-Fitr (estimated)'),
+    (dt.date(2029, 2, 22), dt.date(2029, 2, 22), 'Founding Day'),
+    (dt.date(2029, 4, 22), dt.date(2029, 4, 26), 'Eid al-Adha (estimated)'),
+    (dt.date(2029, 9, 23), dt.date(2029, 9, 23), 'National Day'),
+]
+HOL = set()
+for a, b, _ in HOLIDAYS:
+    d = a
+    while d <= b:
+        HOL.add(d); d += dt.timedelta(days=1)
+
+def is_work(d):
+    return d.weekday() in (6, 0, 1, 2, 3) and d not in HOL     # Sun(6) Mon Tue Wed Thu
+
+WORK = []
+_d = START
+while len(WORK) < 1600:
+    if is_work(_d): WORK.append(_d)
+    _d += dt.timedelta(days=1)
+assert WORK[0] == START
+TERM_END = dt.date(2029, 10, 31)       # 36 months from NTP
+TERM_IDX = max(i for i, d in enumerate(WORK) if d <= TERM_END)
+
+# ------------------------------------------------------------------ source data
+SRC = json.load(open('/tmp/w/stations_sched.json'))
+SEC = {}   # BOQ sections per station (Annex 3)
+for s in SRC:
+    SEC[s['id']] = dict(cctv=s['hw']['cctv'], vms=s['hw']['vms'], ac=s['hw']['ac'], ups=s['hw']['ups'], net=s['hw']['net'], civil=s['hw']['civil'])
+LINE_HW = {l: sum(sum(SEC[s['id']].values()) for s in SRC if s['line'] == l) for l in LINES}
+ST = OrderedDict()
+order = sorted(SRC, key=lambda s: (not s['ryd'], s['start']))
+for s in order:
+    hw = sum(SEC[s['id']].values())
+    share = hw / LINE_HW[s['line']]
+    shared_alloc = {k: v * share for k, v in SHARED_PARTS[s['line']].items()}
+    val = hw + sum(shared_alloc.values())
+    civil_w = s['acts']['civil'][1] - s['acts']['civil'][0]
+    inst_w = s['acts']['inst'][1] - s['acts']['inst'][0]
+    inst_w = max(inst_w, 0)
+    ST[s['id']] = dict(id=s['id'], name=s['name'], line=s['line'], ryd=s['ryd'], code=CODE[s['id']], cams=s['cams'], hw=SEC[s['id']],
+                        hwtot=hw, shared=shared_alloc, val=val, start_w=s['start'], big=s['line'] == 'HHR',
+                        civil_w=civil_w)
+TOTAL = sum(s['val'] for s in ST.values())
+assert abs(TOTAL - PO) < 5, TOTAL
+for s in ST.values(): s['f'] = s['val'] / TOTAL
+# fixed durations (working days) from the baseline assumptions
+def stn_params(s):
+    big = s['big']
+    E = 50 if big else 30
+    return dict(sv=20 if big else 10, E=E, appr=15, proc=70 if s['ryd'] else (100 if big else 80),
+                ship=40 if big else 30, civil=s['civil_w'] * 5, inst=0, sat=25 if big else 15, train=10, trial=30,
+                final=15 if big else 10)
+inst_weeks = {s['id']: s['acts']['inst'][1] - s['acts']['inst'][0] for s in SRC}
+for s in ST.values():
+    s['p'] = stn_params(s)
+    # installation window: from the baseline engine (max(is+d_inst, civil end) - is) with min of d_inst
+    d_inst = int(4 + s['cams'] / (35 if s['big'] else 30) + 0.5)
+    s['p']['inst'] = d_inst * 5
+
+# ------------------------------------------------------------------ payment milestones (contract clause 15)
+MS = OrderedDict([
+    ('MS1', ('Mobilization', 0.20)), ('MS2', ('Engineering submittal', 0.10)), ('MS3', ('SAR approval of engineering', 0.10)),
+    ('MS4', ('Material delivery', 0.20)), ('MS5', ('Installation', 0.20)), ('MS6', ('Testing and commissioning (SAT)', 0.10)),
+    ('MS7', ('Final acceptance and handover', 0.10))])
+
+# progress weights (% of station progress), EPC phases: E 12, P 40, C 33, T&C/handover 15
+PROG = OrderedDict()
+PROG.update({'svS': 4, 'svA': 4, 'cnS': 4, 'cnA': 6, 'plS': 6, 'plA': 12 - 0, 'dtS': 0})  # placeholder replaced below
+
+class Act:
+    def __init__(s, code, name, wbs, dur, typ='TT_Task'):
+        s.code, s.name, s.wbs, s.dur, s.typ = code, name, wbs, dur, typ
+        s.preds = []       # (pred_code, type, lag)
+        s.codes = {}
+        s.cost_ms = None   # (milestone, weight)
+        s.prog = 0.0       # progress weight, percent of whole project
+        s.basis = ''
+        s.boq = ''
+        s.station = None
+
+ACTS = OrderedDict()
+WBS = OrderedDict()    # code -> dict(name, parent, level)
+
+def wbs(code, name, parent=None):
+    lvl = 1 if parent is None else WBS[parent]['level'] + 1
+    WBS[code] = dict(code=code, name=name, parent=parent, level=lvl)
+    return code
+
+def act(code, name, wbs_code, dur, typ='TT_Task', preds=(), **codes):
+    a = Act(code, name, wbs_code, dur, typ)
+    a.preds = list(preds)
+    a.codes = codes
+    ACTS[code] = a
+    return a
+
+def hrs(n): return n * 8
