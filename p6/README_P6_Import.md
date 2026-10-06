@@ -17,7 +17,7 @@
 - WBS: Project > Railway > Station > EPC phase (Engineering, Procurement, Construction, Commissioning and handover) > design stage / package > area.
 - Activity codes: EPC phase, Area, Station, Railway, Discipline, Responsibility, Payment milestone, Design stage, Submittal or approval, Priority.
 - Resources (each task has both; milestones have none):
-  - PROG-WT (Non-labor, price 1): progress value in SAR = progress share x 62,000,000. It carries the budget, so earned value, CPI and SPI are in SAR on the fair EPC progress distribution.
+  - PROG-WT (Material, price 1): progress value in SAR = progress share x 62,000,000. It carries the budget, so earned value, CPI and SPI are in SAR on the fair EPC progress distribution.
   - COST-SAR (Material, price 0): contract-condition cost quantity in SAR (total 62,000,000). To see the payment-condition cost curve instead, set COST-SAR price to 1 and PROG-WT to 0.
   - Activity % complete type is Physical for every activity, so enter physical % per activity.
 - Calendar: Sunday to Thursday, 8 h/day, with KSA holidays.
@@ -30,3 +30,10 @@ NTP (PRJ-M0000) is a start milestone with no constraint. Change Project > Detail
 - Durations, logic and station order are planning assumptions, not contract text.
 - Not tested inside P6: the XER passed structural checks (keys, references, resources, codes, calendar) and an independent forward pass that matched every date, but it was never opened in P6. Import it into a test project first and compare the finish (31 Oct 2029) and total cost (62,000,000).
 - Not included: defects liability period and post-acceptance support.
+
+## Cost or progress view (price switch)
+Both resources carry the same kind of quantity (SAR) on every activity, so the price decides what the budget shows:
+- Progress view: PROG-WT Standard Rate 1, COST-SAR 0 (as delivered).
+- Cost view: COST-SAR Standard Rate 1, PROG-WT 0.
+Change it in Resources > Units & Prices, then F9. Never set both to 1 (the project total doubles to 124,000,000).
+If you re-import into a database that already has COST-SAR / PROG-WT, P6 keeps the old rates and types: delete the old project and the two resources first, or set the rates by hand.
