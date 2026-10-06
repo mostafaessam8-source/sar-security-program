@@ -43,3 +43,25 @@ Deliver four files together: `<Project>_Baseline.xer`, `<Project>_BOQ_Cost_Mappi
 3. Write XER, then run `validate.py`: errors empty, 2 resources per task, no milestone resources, open ends only the completion milestone, every activity has all codes, independent forward pass `mism = 0`, cost total = progress total = contract price.
 4. Produce xlsx, docx, README. Copy to the repo `p6/` folder, commit, push to main.
 5. Report honestly: validated structurally and by an independent CPM; if not opened in P6 here, say so; list assumptions (durations are planning assumptions, Eid estimates, exclusions like DLP).
+
+## Reusing the scripts (`scripts/`)
+- `model_base.py` data, calendar, holidays, price table, payment milestones. Replace the contract data (stations, BOQ sections, shared packages, MS %, term, NTP date). It reads a station schedule JSON (path is hard-coded: change it).
+- `model.py` builds WBS, activities, logic, cost keys and progress weights. `run_model.py` solves the wave stretch factor and integer-allocates cost and progress (progress amount in SAR = points x price/100,000). `xer.py` writes the XER. `validate.py` re-reads the XER and checks it independently. `out_xlsx.py` writes the workbook (BOQ_Mapping with BOQ ID and Description first, Invoicing_Monthly, S_Curve...). `out_docx.py` writes the narrative.
+- Run order: `python3 out_xlsx.py` (also writes the XER), `python3 out_docx.py`, `python3 validate.py <xer>`. Output folder is hard-coded to `/home/user/<repo>/p6`: change it.
+- Validator expectations: errs empty, activities = tasks + milestones, open_start only NTP, open_end only completion milestone, mism 0, cost total = progress total = contract price.
+
+## Delivery
+- Commit the four files to the project repo (`p6/`) with the Co-Authored-By and Claude-Session trailers, push to the branch the user named, then send all four files to the user (SendUserFile).
+- The final message states plainly: what was validated, that it was not opened in P6 if so, assumptions (durations, Eid), what is excluded.
+
+## Lessons from the SAR baseline (keep)
+- Only the contract the user declares final is a source; never reuse another project's numbers.
+- Both resource prices 1 doubles the total; the first import into a database fixes resource prices and types, so tell the user to delete old resources before re-importing.
+- The workbook Summary check cell must reference the right cells (cost loaded minus contract price); recalc the workbook to catch `#VALUE!`.
+- Keep the price table section codes (A1 to A6) as BOQ IDs; label derived IDs as derived.
+- Invoices follow payment milestones, not cost spread: Invoicing_Monthly is separate from the S_Curve sheet and the two will differ.
+
+## Change log
+- v1 baseline method: two resources, EPC WBS, design stages with submittal/approval, logic-driven completion, NTP milestone.
+- v2: Physical % complete; both resources Material in SAR with price switch; full PROJECT table for import.
+- v3: Invoicing_Monthly detailed sheet; BOQ ID and BOQ Description as the first two columns of BOQ_Mapping.
