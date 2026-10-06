@@ -73,8 +73,32 @@ wp['A32'] = 'Check: MS1 + stations MS2-MS7 = total price'; wp['A32'].font = BOLD
 wm = wb.create_sheet('BOQ_Mapping')
 wm['A1'] = 'Activity cost mapping: how each activity cost was distributed from the BOQ'; wm['A1'].font = Font(name='Calibri', bold=True, size=14, color=BLUE)
 wm['A2'] = 'Cost = milestone amount (contract payment condition x station share of the BOQ) x distribution key. Column K recomputes it with formulas; column L is the whole-riyal value loaded in P6.'; wm['A2'].font = BF
-cols = ['Activity ID', 'Activity name', 'WBS', 'EPC phase', 'Station', 'Payment milestone', 'Milestone %', 'Station price share', 'Milestone amount (SAR)', 'Distribution key', 'Cost recomputed', 'Cost in P6 (SAR)', 'Difference', 'Distribution basis', 'Primary BOQ source', 'Progress points', 'Progress % of project', 'Start', 'Finish', 'Duration (work days)']
-head(wm, 4, cols, [13, 62, 22, 14, 10, 12, 10, 11, 15, 11, 15, 15, 10, 70, 58, 11, 11, 12, 12, 10])
+A_DESC = {'A1': 'CCTV system', 'A2': 'Video management and video wall', 'A3': 'Access control and intercom', 'A4': 'UPS', 'A5': 'Poles, cabinets and network', 'A6': 'Civil works'}
+SH_DESC = {'SH-DES': 'Design and engineering package (per railway, allocated to the station)', 'SH-PM': 'Project management (per railway, allocated)', 'SH-FAT': 'Factory acceptance test (per railway, allocated)',
+           'SH-SPR': 'Commissioning spares (per railway, allocated)', 'SH-TRN': 'Training (per railway, allocated)', 'SH-CLD': 'Cloud service 12 months (per railway, allocated)'}
+def boq_of(code, a):
+    suf = code.split('-', 1)[1]
+    if suf in ('A1010', 'A1020', 'A1040', 'A1050'): return 'TOTAL', 'Contract price (Annex 3 total, SAR 62,000,000): 20% mobilization payment, clause 15'
+    if suf in ('C1010', 'C1020') and code[:3] in CODE.values(): return 'A6', 'A6 ' + A_DESC['A6']
+    if suf[0] == 'C' and suf in ('C2010', 'C2020', 'C2030', 'C2040', 'C2050'): return 'A1-A5', 'A1 to A5 equipment sections: installation share (works included in unit prices)'
+    if suf[0] == 'E' and suf <= 'E1120': return 'SH-DES', SH_DESC['SH-DES']
+    if suf == 'E1130': return 'SH-DES, SH-TRN', SH_DESC['SH-DES'] + ' and ' + SH_DESC['SH-TRN'] + ': documentation and training share'
+    if suf == 'E1140': return 'SH-DES', SH_DESC['SH-DES'] + ': documentation share'
+    if suf == 'P1010': return 'A1', 'A1 ' + A_DESC['A1']
+    if suf == 'P1020': return 'A2', 'A2 ' + A_DESC['A2']
+    if suf == 'P1030': return 'A3', 'A3 ' + A_DESC['A3']
+    if suf == 'P1040': return 'A4, A5', 'A4 ' + A_DESC['A4'] + ' and A5 ' + A_DESC['A5']
+    if suf == 'P1050': return 'SH-FAT', SH_DESC['SH-FAT']
+    if suf == 'P1060': return 'A1-A5', 'A1 to A5 equipment sections: logistics (shipping, customs, delivery) share'
+    if suf == 'P1070': return 'SH-SPR', SH_DESC['SH-SPR']
+    if suf in ('T1010', 'T1020'): return 'A1-A5', 'A1 to A5 equipment sections: testing and commissioning share'
+    if suf == 'T2010': return 'SH-TRN', SH_DESC['SH-TRN']
+    if suf == 'T2020': return 'A1-A5', 'A1 to A5 equipment sections: trial operation share'
+    if suf == 'T3010': return 'A1-A5', 'A1 to A5 equipment sections: handover share'
+    return '-', 'No BOQ cost: administrative or review step with no payment milestone'
+wm['A2'] = 'BOQ ID uses the Annex 3 section codes A1 to A6; the shared per-railway packages carry derived IDs SH-xx. Cost = milestone amount (payment condition x station share of the BOQ) x distribution key. Column M recomputes it with formulas; column N is the whole-riyal value loaded in P6.'; wm['A2'].font = BF
+cols = ['BOQ ID', 'BOQ Description', 'Activity ID', 'Activity name', 'WBS', 'EPC phase', 'Station', 'Payment milestone', 'Milestone %', 'Station price share', 'Milestone amount (SAR)', 'Distribution key', 'Cost recomputed', 'Cost in P6 (SAR)', 'Difference', 'Distribution basis', 'Primary BOQ source', 'Progress points', 'Progress % of project', 'Start', 'Finish', 'Duration (work days)']
+head(wm, 4, cols, [14, 58, 13, 62, 22, 14, 10, 12, 10, 11, 15, 11, 15, 15, 10, 70, 58, 11, 11, 12, 12, 10])
 r = 5
 for code, a in ACTS.items():
     if a.typ != 'TT_Task': continue
@@ -83,17 +107,19 @@ for code, a in ACTS.items():
     if ms == 'MS1':
         share = None; mamt = f"=Payment_Milestones!D5"; pctv = MS['MS1'][1]
     elif ms:
-        share = f"=Station_BOQ!R{STROW[stc]}"; pctv = MS[ms][1]; mamt = f'=G{r}*{PO}*H{r}'
+        share = f"=Station_BOQ!R{STROW[stc]}"; pctv = MS[ms][1]; mamt = f'=I{r}*{PO}*J{r}'
     else:
         share = None; mamt = 0; pctv = 0
     key = a.cost_ms[1] if a.cost_ms else 0
-    rec = f'=ROUND(I{r}*J{r},0)' if ms else 0
-    put(wm, r, [code, a.name, a.wbs, EPCN.get(a.codes.get('EPC'), ''), stc, ms, pctv, share, mamt, key, rec, a.cost, f'=L{r}-K{r}', a.basis or 'No payment milestone attached (administrative approval or review step)', a.boq or '-', a.pts, f'=P{r}/1000', WORK[ES[code]], WORK[EF[code]], a.dur],
-        {7: '0%', 8: '0.00%', 9: '#,##0', 10: '0.0000', 11: '#,##0', 12: '#,##0', 13: '#,##0', 16: '#,##0', 17: '0.000', 18: 'dd-mmm-yy', 19: 'dd-mmm-yy'})
+    rec = f'=ROUND(K{r}*L{r},0)' if ms else 0
+    bid, bdesc = boq_of(code, a)
+    if not ms: bid, bdesc = '-', 'No BOQ cost: administrative or review step with no payment milestone'
+    put(wm, r, [bid, bdesc, code, a.name, a.wbs, EPCN.get(a.codes.get('EPC'), ''), stc, ms, pctv, share, mamt, key, rec, a.cost, f'=N{r}-M{r}', a.basis or 'No payment milestone attached (administrative approval or review step)', a.boq or '-', a.pts, f'=R{r}/1000', WORK[ES[code]], WORK[EF[code]], a.dur],
+        {9: '0%', 10: '0.00%', 11: '#,##0', 12: '0.0000', 13: '#,##0', 14: '#,##0', 15: '#,##0', 18: '#,##0', 19: '0.000', 20: 'dd-mmm-yy', 21: 'dd-mmm-yy'})
     r += 1
 last_map = r - 1
-put(wm, r, ['Total', '', '', '', '', '', '', '', '', '', f'=SUM(K5:K{last_map})', f'=SUM(L5:L{last_map})', f'=SUM(M5:M{last_map})', '', '', f'=SUM(P5:P{last_map})', f'=SUM(Q5:Q{last_map})', '', '', ''], {11: '#,##0', 12: '#,##0', 13: '#,##0', 16: '#,##0', 17: '0.000'}, bold=True, fill=TINT2)
-wm.freeze_panes = 'C5'; wm.auto_filter.ref = f'A4:T{last_map}'
+put(wm, r, ['Total'] + [''] * 11 + [f'=SUM(M5:M{last_map})', f'=SUM(N5:N{last_map})', f'=SUM(O5:O{last_map})', '', '', f'=SUM(R5:R{last_map})', f'=SUM(S5:S{last_map})', '', '', ''], {13: '#,##0', 14: '#,##0', 15: '#,##0', 18: '#,##0', 19: '0.000'}, bold=True, fill=TINT2)
+wm.freeze_panes = 'E5'; wm.auto_filter.ref = f'A4:V{last_map}'
 
 # ---------------------------------------------------------------- Distribution keys
 wk = wb.create_sheet('Distribution_Keys')
@@ -146,7 +172,7 @@ wsc.add_chart(ch, 'H4')
 # ---------------------------------------------------------------- Resources
 wr = wb.create_sheet('Resources')
 head(wr, 1, ['Resource ID', 'Name', 'Type', 'Unit', 'Price per unit', 'Meaning', 'How P6 uses it'], [12, 44, 12, 8, 12, 70, 80])
-put(wr, 2, ['COST-SAR', 'Contract cost (BOQ x payment milestones)', 'Material', 'SAR', 0, 'Contract cost of the activity in SAR from the payment conditions applied to the BOQ station value (column L of BOQ_Mapping)', 'Quantity carrier. Price 0, so it adds no budget cost. Set the price to 1 (and PROG-WT to 0) to see the contract-condition cost curve instead.'])
+put(wr, 2, ['COST-SAR', 'Contract cost (BOQ x payment milestones)', 'Material', 'SAR', 0, 'Contract cost of the activity in SAR from the payment conditions applied to the BOQ station value (column N of BOQ_Mapping)', 'Quantity carrier. Price 0, so it adds no budget cost. Set the price to 1 (and PROG-WT to 0) to see the contract-condition cost curve instead.'])
 put(wr, 3, ['PROG-WT', 'Progress weight (fair EPC distribution, SAR value)', 'Material', 'SAR', 1, 'Progress share x SAR 62,000,000 (100,000 points x SAR 620). Fair EPC distribution (see Distribution_Keys)', 'Price 1, so budgeted cost = progress value in SAR. Activity % complete type is Physical, so earned value = physical % x this budget, and the cost and schedule performance indexes are measured in SAR on the progress distribution.'])
 
 # ---------------------------------------------------------------- Codes, WBS, relationships
@@ -174,7 +200,7 @@ wsu['A1'] = 'SAR Passengers Security Checking: baseline schedule, cost loading a
 lines = [('Source of cost', 'Draft contract with ETECHS (22 Jan 2024): Annex 3 price table (Revised-02) and clause 15 payment milestones'),
          ('Contract price', PO), ('Project start (NTP milestone)', START), ('Contract term end (36 months)', TERM_END),
          ('Activities', len([1 for a in ACTS.values()])), ('Tasks (2 resources each)', len([1 for a in ACTS.values() if a.typ == "TT_Task"])), ('Milestones', len([1 for a in ACTS.values() if a.typ != "TT_Task"])),
-         ('Cost loaded in P6 (SAR)', f'=BOQ_Mapping!L{last_map+1}'), ('Difference to contract price', f'=B10-B4'), ('Progress points loaded', f'=BOQ_Mapping!P{last_map+1}'),
+         ('Cost loaded in P6 (SAR)', f'=BOQ_Mapping!N{last_map+1}'), ('Difference to contract price', f'=B10-B4'), ('Progress points loaded', f'=BOQ_Mapping!R{last_map+1}'),
          ('Working calendar', 'Sunday to Thursday, 8 hours; KSA official holidays; Eid dates are estimates to be updated'), ('How to read', 'Station_BOQ gives the BOQ value of each station; Payment_Milestones applies the contract payment conditions; BOQ_Mapping shows each activity cost; Distribution_Keys explains the keys; S_Curve shows cost against progress; Invoicing_Monthly lists every invoice by month, milestone and station.')]
 for i, (a_, b_) in enumerate(lines):
     wsu.cell(row=3 + i, column=1, value=a_).font = BOLD; c = wsu.cell(row=3 + i, column=2, value=b_); c.font = BF
