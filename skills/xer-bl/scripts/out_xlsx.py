@@ -174,14 +174,62 @@ wsu['A1'] = 'SAR Passengers Security Checking: baseline schedule, cost loading a
 lines = [('Source of cost', 'Draft contract with ETECHS (22 Jan 2024): Annex 3 price table (Revised-02) and clause 15 payment milestones'),
          ('Contract price', PO), ('Project start (NTP milestone)', START), ('Contract term end (36 months)', TERM_END),
          ('Activities', len([1 for a in ACTS.values()])), ('Tasks (2 resources each)', len([1 for a in ACTS.values() if a.typ == "TT_Task"])), ('Milestones', len([1 for a in ACTS.values() if a.typ != "TT_Task"])),
-         ('Cost loaded in P6 (SAR)', f'=BOQ_Mapping!L{last_map+1}'), ('Difference to contract price', f'=B9-B3'), ('Progress points loaded', f'=BOQ_Mapping!P{last_map+1}'),
-         ('Working calendar', 'Sunday to Thursday, 8 hours; KSA official holidays; Eid dates are estimates to be updated'), ('How to read', 'Station_BOQ gives the BOQ value of each station; Payment_Milestones applies the contract payment conditions; BOQ_Mapping shows each activity cost; Distribution_Keys explains the keys; S_Curve shows cost against progress.')]
+         ('Cost loaded in P6 (SAR)', f'=BOQ_Mapping!L{last_map+1}'), ('Difference to contract price', f'=B10-B4'), ('Progress points loaded', f'=BOQ_Mapping!P{last_map+1}'),
+         ('Working calendar', 'Sunday to Thursday, 8 hours; KSA official holidays; Eid dates are estimates to be updated'), ('How to read', 'Station_BOQ gives the BOQ value of each station; Payment_Milestones applies the contract payment conditions; BOQ_Mapping shows each activity cost; Distribution_Keys explains the keys; S_Curve shows cost against progress; Invoicing_Monthly lists every invoice by month, milestone and station.')]
 for i, (a_, b_) in enumerate(lines):
     wsu.cell(row=3 + i, column=1, value=a_).font = BOLD; c = wsu.cell(row=3 + i, column=2, value=b_); c.font = BF
     if isinstance(b_, (int,)) and a_ == 'Contract price': c.number_format = '#,##0'
     if isinstance(b_, dt.date): c.number_format = 'dd-mmm-yyyy'
 wsu['B10'].number_format = '#,##0'; wsu['B11'].number_format = '#,##0'; wsu['B12'].number_format = '#,##0'
 wsu.column_dimensions['A'].width = 34; wsu.column_dimensions['B'].width = 120
+# ---------------------------------------------------------------- Invoicing per month (detailed)
+wi = wb.create_sheet('Invoicing_Monthly')
+wi['A1'] = 'Invoices per month, detailed: each payment milestone is invoiced in the month its milestone activity is achieved in the programme'; wi['A1'].font = Font(name='Calibri', bold=True, size=14, color=BLUE)
+wi['A2'] = 'Amount = clause 15 payment milestone x Annex 3 station price (formulas link to Payment_Milestones). Invoice month = month of the trigger milestone date. Payment terms after invoicing (days to pay) are not modelled.'; wi['A2'].font = BF
+TRIG = {'MS2': 'E1200', 'MS3': 'E1210', 'MS4': 'P1100', 'MS5': 'C2100', 'MS6': 'T1100', 'MS7': 'T3100'}
+ev = [('MS1', 'All stations', 'Project', 'PRJ-M1100', 'Payment_Milestones!D5')]
+for i, s_ in enumerate(ST.values()):
+    for j, (m_, suf) in enumerate(TRIG.items()):
+        ev.append((m_, s_['name'] + ' (' + s_['code'] + ')', s_['line'], f"{s_['code']}-{suf}", f"Payment_Milestones!{L(3 + j)}{16 + i}"))
+ev.sort(key=lambda e: (ES[e[3]], e[0]))
+head(wi, 4, ['Invoice month', 'Milestone date', 'Milestone', 'Description', 'Station', 'Railway', 'Trigger activity ID', 'Trigger activity', 'Invoice amount (SAR)', 'Cumulative (SAR)', 'Cumulative %'], [13, 14, 11, 34, 28, 9, 15, 52, 17, 17, 12])
+r1 = 5
+for i, (m_, stn, ln, tc, ref) in enumerate(ev):
+    r = r1 + i; d_ = WORK[ES[tc]]
+    put(wi, r, [dt.date(d_.year, d_.month, 1), d_, m_, MS[m_][0], stn, ln, tc, ACTS[tc].name, '=' + ref, f'=SUM(I${r1}:I{r})', f'=J{r}/{PO}'],
+        {1: 'mmm-yyyy', 2: 'dd-mmm-yyyy', 9: '#,##0', 10: '#,##0', 11: '0.0%'})
+rl = r1 + len(ev) - 1
+put(wi, rl + 1, ['Total', '', '', '', '', '', '', '', f'=SUM(I{r1}:I{rl})', '', ''], {9: '#,##0'}, bold=True, fill=TINT2)
+wi.cell(row=rl + 2, column=8, value='Difference to contract price (should be 0)').font = BOLD; c_ = wi.cell(row=rl + 2, column=9, value=f'=I{rl+1}-{PO}'); c_.number_format = '#,##0.00'
+wi.freeze_panes = 'A5'; wi.auto_filter.ref = f'A4:K{rl}'
+# monthly matrix by milestone
+mstart = rl + 5
+wi.cell(row=mstart - 1, column=1, value='Monthly invoicing by payment milestone').font = Font(name='Calibri', bold=True, size=12, color=BLUE)
+head(wi, mstart, ['Month'] + list(MS) + ['Invoiced in month (SAR)', 'Cumulative invoiced (SAR)', 'Cumulative %'])
+mon = []; y_, m_ = START.year, START.month
+while (y_, m_) <= (TERM_END.year, TERM_END.month): mon.append(dt.date(y_, m_, 1)); y_, m_ = (y_, m_ + 1) if m_ < 12 else (y_ + 1, 1)
+for i, d_ in enumerate(mon):
+    r = mstart + 1 + i
+    put(wi, r, [d_] + [f'=SUMIFS($I${r1}:$I${rl},$A${r1}:$A${rl},$A{r},$C${r1}:$C${rl},{L(2 + j)}${mstart})' for j in range(7)] + [f'=SUM(B{r}:H{r})', f'=SUM(I${mstart+1}:I{r})', f'=J{r}/{PO}'],
+        {1: 'mmm-yyyy'} | {j: '#,##0' for j in range(2, 11)} | {11: '0.0%'})
+me = mstart + len(mon)
+put(wi, me + 1, ['Total'] + [f'=SUM({L(j)}{mstart+1}:{L(j)}{me})' for j in range(2, 10)] + ['', ''], {j: '#,##0' for j in range(2, 10)}, bold=True, fill=TINT2)
+ch2 = LineChart(); ch2.title = 'Cumulative invoiced %'; ch2.height = 9; ch2.width = 22
+ch2.add_data(Reference(wi, min_col=11, min_row=mstart, max_row=me), titles_from_data=True); ch2.set_categories(Reference(wi, min_col=1, min_row=mstart + 1, max_row=me)); ch2.y_axis.number_format = '0%'; ch2.y_axis.scaling.max = 1.0
+wi.add_chart(ch2, f'M{mstart}')
+# monthly matrix by station
+sstart = me + 5
+wi.cell(row=sstart - 1, column=1, value='Monthly invoicing by station (MS2 to MS7 per station, MS1 shown as project level)').font = Font(name='Calibri', bold=True, size=12, color=BLUE)
+snames = ['All stations'] + [s_['name'] + ' (' + s_['code'] + ')' for s_ in ST.values()]
+head(wi, sstart, ['Month'] + snames + ['Total'])
+for i, d_ in enumerate(mon):
+    r = sstart + 1 + i
+    put(wi, r, [d_] + [f'=SUMIFS($I${r1}:$I${rl},$A${r1}:$A${rl},$A{r},$E${r1}:$E${rl},{L(2 + j)}${sstart})' for j in range(len(snames))] + [f'=SUM(B{r}:{L(1 + len(snames))}{r})'],
+        {1: 'mmm-yyyy'} | {j: '#,##0' for j in range(2, 3 + len(snames))})
+se = sstart + len(mon)
+put(wi, se + 1, ['Total'] + [f'=SUM({L(j)}{sstart+1}:{L(j)}{se})' for j in range(2, 3 + len(snames))], {j: '#,##0' for j in range(2, 3 + len(snames))}, bold=True, fill=TINT2)
+for j in range(len(snames)): wi.column_dimensions[L(12 + j)].width = 14 if False else wi.column_dimensions[L(12 + j)].width
+
 for w_ in wb.worksheets:
     w_.sheet_view.showGridLines = False
 wb.save(f'{OUT}/SAR_BOQ_Cost_Mapping.xlsx')
