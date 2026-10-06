@@ -543,6 +543,20 @@ function renderBoq(){
 
 /* ===== SCHEDULE (GANTT) ===== */
 const PX=7, open=new Set();
+const DSTAGES=[
+ {k:'survey',n:'D1 Site survey and as-found verification',col:C.sky,win:s=>s.acts.survey,src:'Annex 2 clauses 3 and 6; Annex 4 site-visit responses',
+  req:['Verify existing CCTV, cabling, conduits, racks, power and levels at the area','Identify underground services in the work area','Confirm what can be re-used (only if proven fit); a dedicated network and power supply are required','Pre-construction survey report of existing conditions and site grades'],
+  per:s=>[`Survey of ${s.name}: platforms, ticketing and control-room areas for ${s.cam} cameras`,`Pole and trench routes for ${s.cams.fixed+s.cams.c90+s.cams.c360+s.cams.tandem+s.cams.pano} camera positions (${s.line==='HHR'?'large station, 4 weeks':'2 weeks'})`]},
+ {k:'design',n:'D2 Design and engineering submittals',col:C.mid,win:s=>s.acts.eng,src:'Annex 2 clauses 5 and 13; Annex 4 items 30 and 33',
+  req:['Preliminary and detailed design drawings for the area','Detailed BOQ with unit rates, bill of materials and data sheets','Field-of-view study for camera heights (5 m platform poles, 1.2 m ALPR poles are the pricing basis)','Network, power and control-room design; method statements; shop drawings','ITP and QC documents'],
+  per:s=>[`CCTV layout: ${s.cam} cameras (${s.cams.face} face recognition, ${s.cams.anpr} ANPR)`,`Video management and video wall, access control, UPS and network design`,`Civil design: trenches, duct banks and poles (SAR ${(s.hw.civil/1e6).toFixed(2)}M priced)`]},
+ {k:'appr',n:'D3 SAR review and approval',col:C.slate,win:s=>s.acts.appr,src:'Contract clause 3 (review periods); clause 15 (payment)',
+  req:['Design package submitted to SAR; any review takes at most 21 days','Approval is needed before procurement and execution','Payments: 10% on engineering submittal and 10% on SAR approval, per station'],
+  per:s=>[`Approval of the ${s.name} package unlocks SAR ${(s.all*0.1/1e6).toFixed(2)}M (10% of its price)`]},
+ {k:'hcis',n:'D4 HCIS Stage 3 and 4 documentation',col:C.blue,win:s=>({st:s.acts.appr.st,en:s.acts.appr.en}),src:'Annex 5 (compliance table); Annex 4 item 33',
+  req:['Contractor prepares HCIS Stage 3 and Stage 4 documents for SAR final review','SAR submits them to HCIS; the contractor follows HCIS 2017 directives','Extra HCIS comments that add quantities are quoted separately','Timing assumed to run alongside SAR review (not stated in the contract)'],
+  per:s=>[`HCIS package for ${s.name}: quantities from the approved design (${s.cam} cameras)`]}
+];
 function ganttTree(){
   const st=sel(), mk4=s=>s.list.filter(a=>F.phases.has(a.ph)).map(a=>({lv:4,id:s.id+a.k,label:a.name,st:a.st,en:a.en,col:PHASE[a.ph].c,tip:`${a.name}\n${wTxt(a.st)} → ${wTxt(a.en)}\n${a.dur} weeks`,ph:a.ph}));
   const stNode=s=>({lv:3,id:s.id,label:s.name,st:s.st,en:s.en,col:LINES[s.line].color,ryd:s.ryd,tip:`${s.name}\n${wTxt(s.st)} → ${wTxt(s.en)}\nSAR ${fmtM(s.all)}`,kids:mk4(s),ms:[[s.acts.sat.en,'SAT'],[s.en,'Final acceptance']]});
@@ -567,6 +581,15 @@ function ganttTree(){
     const EPC=[['E','Engineering',['survey','eng','appr'],C.sky],['P','Procurement',['proc','ship'],C.slate],['C','Construction',['civil','inst'],C.blue],['X','Commissioning, trial & handover',['sat','train','trial','final'],C.yellow]];
     const ordered=[...st].sort((a,b)=>(b.ryd-a.ryd)||a.st-b.st); groups.push(mob);groups.length=0;groups.push(mob);
     EPC.forEach(([k,label,keys,col])=>{
+      if(k==='E'){ // design: level 3 = design stages, level 4 = the areas (stations) with their stage details
+        const stg=DSTAGES.map(ds=>{
+          const areas=ordered.map(s=>{const a=ds.win(s); return {lv:4,id:'DSA~'+ds.k+'~'+s.id,label:`${s.name} · ${s.cam} cameras`,st:a.st,en:a.en,col:LINES[s.line].color,ryd:s.ryd,
+            tip:`${ds.n} · ${s.name}\n${wTxt(a.st)} → ${wTxt(a.en)}\n${Math.round(a.en-a.st)} weeks`};});
+          return {lv:3,id:'DS~'+ds.k,label:ds.n,st:Math.min(...areas.map(x=>x.st)),en:Math.max(...areas.map(x=>x.en)),col:ds.col,tip:ds.n+'\n'+ds.req[0],kids:areas};
+        }).filter(n=>F.phases.has('design'));
+        if(stg.length)groups.push({lv:2,id:'EPC_E',label:`Engineering: ${stg.length} design stages, ${ordered.length} areas`,st:Math.min(...stg.map(n=>n.st)),en:Math.max(...stg.map(n=>n.en)),col,tip:label,kids:stg});
+        return;
+      }
       const kids=ordered.map(s=>{const acts=keys.map(x=>s.acts[x]).filter(a=>F.phases.has(a.ph)); if(!acts.length)return null;
         return {lv:3,id:k+'~'+s.id,label:s.name,st:Math.min(...acts.map(a=>a.st)),en:Math.max(...acts.map(a=>a.en)),col:LINES[s.line].color,ryd:s.ryd,tip:`${s.name} · ${label}\n${wTxt(Math.min(...acts.map(a=>a.st)))} → ${wTxt(Math.max(...acts.map(a=>a.en)))}`,
           kids:acts.map(a=>({lv:4,id:s.id+a.k,label:a.name,st:a.st,en:a.en,col:PHASE[a.ph].c,tip:`${a.name}\n${wTxt(a.st)} → ${wTxt(a.en)}\n${a.dur} weeks`,ph:a.ph}))};}).filter(Boolean);
@@ -600,7 +623,7 @@ function renderSchedule(){
    <div class="fgroup"><span class="flabel">Structure</span><span class="seg" id="gM"><button data-m="rail" aria-pressed="${ganttMode==='rail'}">By railway & station</button><button data-m="epc" aria-pressed="${ganttMode==='epc'}">EPC</button></span></div>
    <div class="fgroup" ${ganttMode==='epc'?'hidden':''}><span class="flabel">Riyadh</span><span class="seg" id="gR"><button data-r="1" aria-pressed="${rydFirst}">Group first</button><button data-r="0" aria-pressed="${!rydFirst}">By railway</button></span></div>
    <div class="legend" style="margin:0">${Object.values(PHASE).map(p=>`<span><i style="background:${p.c}"></i>${p.n}</span>`).join('')}<span><i style="background:${C.black};transform:rotate(45deg) scale(.85)"></i>Milestone</span><span><i style="background:${C.red};transform:rotate(45deg) scale(.85)"></i>Final acceptance</span></div></div>
-   <p class="note" style="margin:8px 0">Axis in contract months from NTP (${fmtD(ntpDate())}, editable above). Hover bars for dates. Station bars are coloured by railway, activity bars by phase.</p>
+   <p class="note" style="margin:8px 0">Axis in contract months from NTP (${fmtD(ntpDate())}, editable above). Hover bars for dates. Station bars are coloured by railway, activity bars by phase.${ganttMode==='epc'?' In EPC view, Engineering is split into design stages D1 to D4; click a stage for what it requires, or an area for the details of that station.':''}</p>
    <div class="gwrap"><div class="gh"><div class="glab">Activity</div><div class="gtrack" style="width:${W}px;position:relative">${qs}${mon}</div></div>${rows.map(rowHtml).join('')}</div></div>
   <div class="sp"></div>
   <div class="grid g2">
@@ -768,7 +791,15 @@ const NODE_INFO={MOB:['Mobilization & baseline programme','Weeks 0 to 9. Initial
  M3:['Mobilization & submittals','Portable offices, personnel, insurance, performance security, QC programme, ITP, HSE plan, security programme, procurement and shipping plan.'],M3a:['Insurance, performance bond, key personnel','Performance security of 5% of the contract price must be in place before the effective date.'],M3b:['QC programme, ITP, HSE, security programme','Required submittals under SAR SOW clause 6 and the WARA risk-assessment template.'],M3c:['Procurement & long-lead list','Long-lead items and shipping schedule are identified early so procurement is not delayed.'],
  M4:['Survey of Riyadh stations, then others','Pre-construction survey of existing conditions; the two Riyadh stations are surveyed first.'],M5:['Detailed baseline programme','Due 21 days after completion of mobilization and survey, covering the whole scope with start and completion of each deliverable by SAR priority.'],
  CLO:['Closeout, warranty & support','Rolling closeout per station, contract closeout at the end of the 36-month term, and defects liability that continues beyond it.'],C1:['As-builts, O&M manuals, spares lists','Handed over station by station with the taking-over application.'],C2:['Contract closeout pack & handover','Final documentation package and handover at the end of the term.'],C3:['Defects liability','One year from each Taking-Over Certificate. The Performance Certificate follows the end of the last period, after month 36.']};
+function dDesignStage(k){const ds=DSTAGES.find(x=>x.k===k),ss=[...sel()].sort((a,b)=>(b.ryd-a.ryd)||a.st-b.st);
+  openDrawer(ds.n,'Design stage, details required for each area',`<h4>What this stage requires</h4><ul>${ds.req.map(r=>`<li>${r}</li>`).join('')}</ul><p class="note">Source: ${ds.src}.</p><h4>Areas in view</h4>${tbl(['Area','Start','Finish','Weeks'],ss.map(s=>{const a=ds.win(s);return row([`${s.name} ${lt(s.line)}${pri(s)}`,fmtD(wDate(a.st)),fmtD(wDate(a.en)),Math.round(a.en-a.st)],'DSA~'+k+'~'+s.id);}))}`);}
+function dDesignArea(k,sid){const ds=DSTAGES.find(x=>x.k===k),s=S.find(x=>x.id===sid),a=ds.win(s);
+  openDrawer(s.name,`${ds.n}`,`<div class="dk">${kpi(Math.round(a.en-a.st)+' wk','Duration','Assumed baseline',ds.col)}${kpi(fmtD(wDate(a.st)),'Start','M'+(a.st/WPM).toFixed(1),C.slate)}${kpi(fmtD(wDate(a.en)),'Finish','M'+(a.en/WPM).toFixed(1),C.red)}${kpi(s.cam,'Cameras in this area',s.cams.face+' face recognition · '+s.cams.anpr+' ANPR',C.yellow)}</div>
+  <h4>Details required for this area</h4><ul>${ds.per(s).map(r=>`<li>${r}</li>`).join('')}</ul><h4>What the stage requires (all areas)</h4><ul>${ds.req.map(r=>`<li>${r}</li>`).join('')}</ul><p class="note">Source: ${ds.src}.</p>
+  <div class="btnrow"><button class="btn ghost" data-drill="station:${s.id}">Open ${s.name}</button></div>`);}
 function dNode(id){
+  if(id.startsWith('DSA~')){const [, k, sid]=id.split('~');return dDesignArea(k,sid);}
+  if(id.startsWith('DS~')){return dDesignStage(id.slice(3));}
   if(id.includes('~')){const [k,sid]=id.split('~');return dStation(sid);}
   if(id.startsWith('EPC_')){const m={E:['Engineering',['survey','eng','appr']],P:['Procurement',['proc','ship']],C:['Construction',['civil','inst']],X:['Commissioning, trial & handover',['sat','train','trial','final']]}[id.slice(4)];
     const ss=[...sel()].sort((a,b)=>(b.ryd-a.ryd)||a.st-b.st);
