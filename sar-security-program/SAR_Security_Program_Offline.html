@@ -543,19 +543,44 @@ function renderBoq(){
 
 /* ===== SCHEDULE (GANTT) ===== */
 const PX=7, open=new Set();
+const SUBC=C.sky, APPC=C.slate;
+const AP=3; // SAR review window in weeks (contract: at most 21 days)
 const DSTAGES=[
- {k:'survey',n:'D1 Site survey and as-found verification',col:C.sky,win:s=>s.acts.survey,src:'Annex 2 clauses 3 and 6; Annex 4 site-visit responses',
-  req:['Verify existing CCTV, cabling, conduits, racks, power and levels at the area','Identify underground services in the work area','Confirm what can be re-used (only if proven fit); a dedicated network and power supply are required','Pre-construction survey report of existing conditions and site grades'],
-  per:s=>[`Survey of ${s.name}: platforms, ticketing and control-room areas for ${s.cam} cameras`,`Pole and trench routes for ${s.cams.fixed+s.cams.c90+s.cams.c360+s.cams.tandem+s.cams.pano} camera positions (${s.line==='HHR'?'large station, 4 weeks':'2 weeks'})`]},
- {k:'design',n:'D2 Design and engineering submittals',col:C.mid,win:s=>s.acts.eng,src:'Annex 2 clauses 5 and 13; Annex 4 items 30 and 33',
-  req:['Preliminary and detailed design drawings for the area','Detailed BOQ with unit rates, bill of materials and data sheets','Field-of-view study for camera heights (5 m platform poles, 1.2 m ALPR poles are the pricing basis)','Network, power and control-room design; method statements; shop drawings','ITP and QC documents'],
-  per:s=>[`CCTV layout: ${s.cam} cameras (${s.cams.face} face recognition, ${s.cams.anpr} ANPR)`,`Video management and video wall, access control, UPS and network design`,`Civil design: trenches, duct banks and poles (SAR ${(s.hw.civil/1e6).toFixed(2)}M priced)`]},
- {k:'appr',n:'D3 SAR review and approval',col:C.slate,win:s=>s.acts.appr,src:'Contract clause 3 (review periods); clause 15 (payment)',
-  req:['Design package submitted to SAR; any review takes at most 21 days','Approval is needed before procurement and execution','Payments: 10% on engineering submittal and 10% on SAR approval, per station'],
-  per:s=>[`Approval of the ${s.name} package unlocks SAR ${(s.all*0.1/1e6).toFixed(2)}M (10% of its price)`]},
- {k:'hcis',n:'D4 HCIS Stage 3 and 4 documentation',col:C.blue,win:s=>({st:s.acts.appr.st,en:s.acts.appr.en}),src:'Annex 5 (compliance table); Annex 4 item 33',
-  req:['Contractor prepares HCIS Stage 3 and Stage 4 documents for SAR final review','SAR submits them to HCIS; the contractor follows HCIS 2017 directives','Extra HCIS comments that add quantities are quoted separately','Timing assumed to run alongside SAR review (not stated in the contract)'],
-  per:s=>[`HCIS package for ${s.name}: quantities from the approved design (${s.cam} cameras)`]}
+ {k:'survey',n:'Site survey and as-found verification',conv:'Pre-design',src:'Annex 2 clauses 3 and 6; Annex 4 site-visit responses',
+  win:s=>{const a=s.acts.survey;return {sub:{st:a.st,en:a.en},apr:{st:a.en,en:a.en+1}};},
+  sub:['Verify existing CCTV, cabling, conduits, racks, power and levels','Identify underground services in the work area','Assess what can be re-used (only if proven fit)','Pre-construction survey report with site grades'],
+  apr:['SAR review of the survey report (assumed 1 week)','Agree what is re-used and what is replaced','Site access, permits and laydown area confirmed'],
+  per:s=>({sub:[`Survey ${s.name}: platforms, ticketing and control-room areas`,`Verify routes and positions for ${s.cam} cameras`],apr:[`SAR sign-off of the ${s.name} survey report`]})},
+ {k:'concept',n:'Concept design',conv:'Conventional stage, not named in the contract',src:'Not a named contract deliverable; basis is Annex 2 scope and Annex 3 quantities (Annex 4 item 33: no HCIS Stage 1 or 2 were developed)',
+  win:s=>{const e0=s.acts.eng.st,E=s.acts.eng.en-e0,a=e0+0.15*E;return {sub:{st:e0,en:a},apr:{st:a,en:a+AP}};},
+  sub:['Basis of design from the SOW and the Annex 3 quantities','Station concept: camera zones, control-room location, cable route concept','HCIS compliance matrix and design assumptions','Re-use assessment from the survey'],
+  apr:['SAR review of the concept and basis of quantities','Confirm design assumptions and exclusions'],
+  per:s=>({sub:[`Concept layout for ${s.name}: ${s.cam} cameras in zones`,`Control-room and network concept (${s.line==='HHR'?'multi-zone HHR station':'single station network'})`],apr:[`SAR agrees the ${s.name} concept and camera zones`]})},
+ {k:'prelim',n:'Preliminary (schematic) design',conv:'Preliminary design drawings are named in Annex 2 clause 5',src:'Annex 2 clause 5 (preliminary and detailed design drawings)',
+  win:s=>{const e0=s.acts.eng.st,E=s.acts.eng.en-e0,a=e0+0.15*E,b=e0+0.40*E;return {sub:{st:a,en:b},apr:{st:b,en:b+AP}};},
+  sub:['Preliminary design drawings: plans and system block diagrams','Network topology, power and UPS sizing','Field-of-view study for camera heights (5 m platform poles, 1.2 m ALPR poles)','Preliminary BOQ and equipment schedule'],
+  apr:['SAR review: 21 days at most','Comments closed and drawings re-issued','HCIS compliance statement accepted'],
+  per:s=>({sub:[`Preliminary plans for ${s.name}: ${s.cam} cameras (${s.cams.face} face recognition, ${s.cams.anpr} ANPR)`,`Preliminary BOQ against the priced SAR ${(s.hwTotal/1e6).toFixed(2)}M`],apr:[`SAR review of ${s.name} preliminary design, 21 days at most`]})},
+ {k:'detail',n:'Detailed design',conv:'Detailed design and BOQ with unit rates (Annex 2 clauses 3, 5, 13)',src:'Annex 2 clauses 3, 5 and 13; contract clause 15 (10% on engineering submittal, 10% on SAR approval)',
+  win:s=>{const e0=s.acts.eng.st,E=s.acts.eng.en-e0,a=e0+0.40*E,b=e0+0.80*E;return {sub:{st:a,en:b},apr:{st:b,en:b+AP}};},
+  sub:['Detailed design drawings and cable schedules','Detailed BOQ with unit rates and bill of materials','Data sheets, manufacturer catalogues, method statements','Civil details: trenches, duct banks, poles','Test plan, ITP and QC documents'],
+  apr:['SAR review: 21 days at most','Material and equipment approval before procurement','Engineering submittal and approval payments (10% each, per station)'],
+  per:s=>({sub:[`Detailed drawings for ${s.name}: CCTV, video management, access control, UPS and network`,`Civil details (SAR ${(s.hw.civil/1e6).toFixed(2)}M priced) and cable routes`],apr:[`Approval of ${s.name} equipment and materials; releases 10% of SAR ${(s.all/1e6).toFixed(2)}M`]})},
+ {k:'ifc',n:'IFC and shop drawings',conv:'Issued for Construction (IFC) and shop drawings (Annex 2 clauses 6, 13, 17)',src:'Annex 2 clauses 6 and 13 (IFC take-off, shop and fabrication drawings)',
+  win:s=>{const e0=s.acts.eng.st,E=s.acts.eng.en-e0,a=e0+0.80*E,b=s.acts.eng.en;return {sub:{st:a,en:b},apr:{st:b,en:b+AP}};},
+  sub:['Issued for Construction drawings','Shop and fabrication drawings','Final equipment and material submittals','Installation method statements; work-permit and PTS requirements'],
+  apr:['SAR approval and release for construction','Work permits for work near the track','Approval triggers procurement and civil works'],
+  per:s=>({sub:[`IFC set for ${s.name}`,`Shop drawings for poles, cabinets and racks (${s.cams.fixed+s.cams.c90+s.cams.c360+s.cams.tandem+s.cams.pano} camera positions)`],apr:[`SAR release of the ${s.name} IFC set; procurement and civil works start`]})},
+ {k:'hcis',n:'HCIS documentation (Stage 3 and 4)',conv:'Regulator submission through SAR (Annex 5)',src:'Annex 5 compliance table; Annex 4 item 33',
+  win:s=>{const e0=s.acts.eng.st,E=s.acts.eng.en-e0,a=e0+0.55*E,b=s.acts.eng.en;return {sub:{st:a,en:b},apr:{st:b,en:b+AP}};},
+  sub:['Contractor prepares HCIS Stage 3 and Stage 4 documents','Compliance statements to HCIS 2017 directives','Quantities taken from the approved design'],
+  apr:['SAR final review of the HCIS package','SAR submits to HCIS; HCIS comments handled','Extra HCIS comments that add quantities are quoted separately'],
+  per:s=>({sub:[`HCIS package for ${s.name}: ${s.cam} cameras`],apr:[`SAR review and HCIS submission for ${s.name}`]})},
+ {k:'asbuilt',n:'As-built and O&M documentation',conv:'As-built drawings (CAD and PDF), O&M manuals (Annex 2 clauses 3 and 7)',src:'Annex 2 clauses 3 (VI), 7 and 13',
+  win:s=>{const a=s.acts.inst.en,b=s.acts.final.st-AP;return {sub:{st:a,en:Math.max(a+1,b)},apr:{st:Math.max(a+1,b),en:Math.max(a+1,b)+AP}};},
+  sub:['As-built drawings in CAD and PDF','Operation and maintenance manuals','Spare-parts list (5 years) and data sheets','FAT and SAT test reports; training manuals'],
+  apr:['SAR review of the final documentation','Approval is a condition of the Taking-Over Certificate'],
+  per:s=>({sub:[`As-builts and O&M manual for ${s.name}`,`Test reports and asset data for ${s.cam} cameras`],apr:[`SAR accepts the ${s.name} documentation before taking-over`]})}
 ];
 function ganttTree(){
   const st=sel(), mk4=s=>s.list.filter(a=>F.phases.has(a.ph)).map(a=>({lv:4,id:s.id+a.k,label:a.name,st:a.st,en:a.en,col:PHASE[a.ph].c,tip:`${a.name}\n${wTxt(a.st)} → ${wTxt(a.en)}\n${a.dur} weeks`,ph:a.ph}));
@@ -581,13 +606,13 @@ function ganttTree(){
     const EPC=[['E','Engineering',['survey','eng','appr'],C.sky],['P','Procurement',['proc','ship'],C.slate],['C','Construction',['civil','inst'],C.blue],['X','Commissioning, trial & handover',['sat','train','trial','final'],C.yellow]];
     const ordered=[...st].sort((a,b)=>(b.ryd-a.ryd)||a.st-b.st); groups.push(mob);groups.length=0;groups.push(mob);
     EPC.forEach(([k,label,keys,col])=>{
-      if(k==='E'){ // design: level 3 = design stages, level 4 = the areas (stations) with their stage details
+      if(k==='E'){ // design: level 3 = design stages, level 4 = areas; each area bar is split into submittal and approval
         const stg=DSTAGES.map(ds=>{
-          const areas=ordered.map(s=>{const a=ds.win(s); return {lv:4,id:'DSA~'+ds.k+'~'+s.id,label:`${s.name} · ${s.cam} cameras`,st:a.st,en:a.en,col:LINES[s.line].color,ryd:s.ryd,
-            tip:`${ds.n} · ${s.name}\n${wTxt(a.st)} → ${wTxt(a.en)}\n${Math.round(a.en-a.st)} weeks`};});
-          return {lv:3,id:'DS~'+ds.k,label:ds.n,st:Math.min(...areas.map(x=>x.st)),en:Math.max(...areas.map(x=>x.en)),col:ds.col,tip:ds.n+'\n'+ds.req[0],kids:areas};
-        }).filter(n=>F.phases.has('design'));
-        if(stg.length)groups.push({lv:2,id:'EPC_E',label:`Engineering: ${stg.length} design stages, ${ordered.length} areas`,st:Math.min(...stg.map(n=>n.st)),en:Math.max(...stg.map(n=>n.en)),col,tip:label,kids:stg});
+          const areas=ordered.map(s=>{const w=ds.win(s); return {lv:4,id:'DSA~'+ds.k+'~'+s.id,label:`${s.name} · ${s.cam} cameras`,st:w.sub.st,en:w.apr.en,col:SUBC,ryd:s.ryd,
+            segs:[{st:w.sub.st,en:w.sub.en,col:SUBC,tip:`Submittal · ${ds.n} · ${s.name}\n${wTxt(w.sub.st)} → ${wTxt(w.sub.en)}`},{st:w.apr.st,en:w.apr.en,col:APPC,tip:`Approval · ${ds.n} · ${s.name}\n${wTxt(w.apr.st)} → ${wTxt(w.apr.en)}`}]};});
+          return {lv:3,id:'DS~'+ds.k,label:ds.n,st:Math.min(...areas.map(x=>x.st)),en:Math.max(...areas.map(x=>x.en)),col:C.blue,tip:ds.n+'\n'+ds.conv,kids:areas};
+        });
+        if(F.phases.has('design')&&stg.length)groups.push({lv:2,id:'EPC_E',label:`Engineering: ${stg.length} design stages, ${ordered.length} areas`,st:Math.min(...stg.map(n=>n.st)),en:Math.max(...stg.map(n=>n.en)),col,tip:label,kids:stg});
         return;
       }
       const kids=ordered.map(s=>{const acts=keys.map(x=>s.acts[x]).filter(a=>F.phases.has(a.ph)); if(!acts.length)return null;
@@ -616,14 +641,14 @@ function renderSchedule(){
   const qs=Array.from({length:12},(_,q)=>`<div class="gq" style="left:${q*3*WPM*PX}px;width:${3*WPM*PX}px">Q${q+1} · ${(wDate(q*3*WPM)).toLocaleDateString('en-GB',{month:'short',year:'2-digit'})}</div>`).join('');
   const bg=`background-size:${13*PX}px 100%;`;
   const rowHtml=n=>{const kids=(n.kids||[]).length, ms=(n.ms||[]).map(m=>`<div class="gm ${m[1]==='Final acceptance'?'red':''}" style="left:${m[0]*PX}px" title="${m[1]} · ${wTxt(m[0])}"></div>`).join('');
-    return `<div class="gr l${n.lv} ${n.ryd?'pri':''}" data-n="${n.id}"><div class="glab" title="${n.label}">${kids?`<span class="tg" data-g="${n.id}">${open.has(n.id)?'▾':'▸'}</span>`:'<span class="tg"></span>'}${n.label}${n.ryd&&n.lv===3?' <span class="tag pri">★</span>':''}</div><div class="gtrack" style="width:${W}px;${bg}"><div class="gb" style="left:${n.st*PX}px;width:${Math.max(3,(n.en-n.st)*PX)}px;--c:${n.col}" title="${(n.tip||n.label+'\n'+wTxt(n.st)+' → '+wTxt(n.en)).replace(/"/g,'&quot;')}"></div>${ms}</div></div>`;};
+    return `<div class="gr l${n.lv} ${n.ryd?'pri':''}" data-n="${n.id}"><div class="glab" title="${n.label}">${kids?`<span class="tg" data-g="${n.id}">${open.has(n.id)?'▾':'▸'}</span>`:'<span class="tg"></span>'}${n.label}${n.ryd&&n.lv===3?' <span class="tag pri">★</span>':''}</div><div class="gtrack" style="width:${W}px;${bg}">${n.segs?n.segs.map(g=>`<div class="gb" style="left:${g.st*PX}px;width:${Math.max(3,(g.en-g.st)*PX)}px;--c:${g.col}" title="${g.tip.replace(/"/g,'&quot;')}"></div>`).join(''):`<div class="gb" style="left:${n.st*PX}px;width:${Math.max(3,(n.en-n.st)*PX)}px;--c:${n.col}" title="${(n.tip||n.label+'\n'+wTxt(n.st)+' → '+wTxt(n.en)).replace(/"/g,'&quot;')}"></div>`}${ms}</div></div>`;};
   $('#t-schedule').innerHTML=head('Schedule, Levels 1 to 4','A 36-month baseline with Riyadh first',`Level 1 project, Level 2 railways and phases, Level 3 stations, Level 4 activities, as the SAR Scope of Work requires. Riyadh starts in weeks 6 and 8; the other stations are spread so that the last one reaches final acceptance in month ${(ENDW/WPM).toFixed(0)}, at the end of the 36-month term.`)+`
   <div class="panel"><div class="row" style="display:flex;gap:14px 22px;flex-wrap:wrap;align-items:center">
    <div class="fgroup"><span class="flabel">Show level</span><span class="seg" id="gL">${[1,2,3,4].map(i=>`<button data-l="${i}" aria-pressed="${i===ganttLevel}">L${i}</button>`).join('')}</span></div>
    <div class="fgroup"><span class="flabel">Structure</span><span class="seg" id="gM"><button data-m="rail" aria-pressed="${ganttMode==='rail'}">By railway & station</button><button data-m="epc" aria-pressed="${ganttMode==='epc'}">EPC</button></span></div>
    <div class="fgroup" ${ganttMode==='epc'?'hidden':''}><span class="flabel">Riyadh</span><span class="seg" id="gR"><button data-r="1" aria-pressed="${rydFirst}">Group first</button><button data-r="0" aria-pressed="${!rydFirst}">By railway</button></span></div>
    <div class="legend" style="margin:0">${Object.values(PHASE).map(p=>`<span><i style="background:${p.c}"></i>${p.n}</span>`).join('')}<span><i style="background:${C.black};transform:rotate(45deg) scale(.85)"></i>Milestone</span><span><i style="background:${C.red};transform:rotate(45deg) scale(.85)"></i>Final acceptance</span></div></div>
-   <p class="note" style="margin:8px 0">Axis in contract months from NTP (${fmtD(ntpDate())}, editable above). Hover bars for dates. Station bars are coloured by railway, activity bars by phase.${ganttMode==='epc'?' In EPC view, Engineering is split into design stages D1 to D4; click a stage for what it requires, or an area for the details of that station.':''}</p>
+   <p class="note" style="margin:8px 0">Axis in contract months from NTP (${fmtD(ntpDate())}, editable above). Hover bars for dates. Station bars are coloured by railway, activity bars by phase.${ganttMode==='epc'?' In EPC view, Engineering is split into the design stages (concept, preliminary, detailed, IFC, HCIS, as-built); each area bar shows the submittal (light blue) and the SAR approval (grey). Click a stage or an area for the activities required.':''}</p>
    <div class="gwrap"><div class="gh"><div class="glab">Activity</div><div class="gtrack" style="width:${W}px;position:relative">${qs}${mon}</div></div>${rows.map(rowHtml).join('')}</div></div>
   <div class="sp"></div>
   <div class="grid g2">
@@ -791,11 +816,12 @@ const NODE_INFO={MOB:['Mobilization & baseline programme','Weeks 0 to 9. Initial
  M3:['Mobilization & submittals','Portable offices, personnel, insurance, performance security, QC programme, ITP, HSE plan, security programme, procurement and shipping plan.'],M3a:['Insurance, performance bond, key personnel','Performance security of 5% of the contract price must be in place before the effective date.'],M3b:['QC programme, ITP, HSE, security programme','Required submittals under SAR SOW clause 6 and the WARA risk-assessment template.'],M3c:['Procurement & long-lead list','Long-lead items and shipping schedule are identified early so procurement is not delayed.'],
  M4:['Survey of Riyadh stations, then others','Pre-construction survey of existing conditions; the two Riyadh stations are surveyed first.'],M5:['Detailed baseline programme','Due 21 days after completion of mobilization and survey, covering the whole scope with start and completion of each deliverable by SAR priority.'],
  CLO:['Closeout, warranty & support','Rolling closeout per station, contract closeout at the end of the 36-month term, and defects liability that continues beyond it.'],C1:['As-builts, O&M manuals, spares lists','Handed over station by station with the taking-over application.'],C2:['Contract closeout pack & handover','Final documentation package and handover at the end of the term.'],C3:['Defects liability','One year from each Taking-Over Certificate. The Performance Certificate follows the end of the last period, after month 36.']};
-function dDesignStage(k){const ds=DSTAGES.find(x=>x.k===k),ss=[...sel()].sort((a,b)=>(b.ryd-a.ryd)||a.st-b.st);
-  openDrawer(ds.n,'Design stage, details required for each area',`<h4>What this stage requires</h4><ul>${ds.req.map(r=>`<li>${r}</li>`).join('')}</ul><p class="note">Source: ${ds.src}.</p><h4>Areas in view</h4>${tbl(['Area','Start','Finish','Weeks'],ss.map(s=>{const a=ds.win(s);return row([`${s.name} ${lt(s.line)}${pri(s)}`,fmtD(wDate(a.st)),fmtD(wDate(a.en)),Math.round(a.en-a.st)],'DSA~'+k+'~'+s.id);}))}`);}
-function dDesignArea(k,sid){const ds=DSTAGES.find(x=>x.k===k),s=S.find(x=>x.id===sid),a=ds.win(s);
-  openDrawer(s.name,`${ds.n}`,`<div class="dk">${kpi(Math.round(a.en-a.st)+' wk','Duration','Assumed baseline',ds.col)}${kpi(fmtD(wDate(a.st)),'Start','M'+(a.st/WPM).toFixed(1),C.slate)}${kpi(fmtD(wDate(a.en)),'Finish','M'+(a.en/WPM).toFixed(1),C.red)}${kpi(s.cam,'Cameras in this area',s.cams.face+' face recognition · '+s.cams.anpr+' ANPR',C.yellow)}</div>
-  <h4>Details required for this area</h4><ul>${ds.per(s).map(r=>`<li>${r}</li>`).join('')}</ul><h4>What the stage requires (all areas)</h4><ul>${ds.req.map(r=>`<li>${r}</li>`).join('')}</ul><p class="note">Source: ${ds.src}.</p>
+function dDesignStage(k){const ds=DSTAGES.find(x=>x.k===k),ss=[...sel()].sort((a,b)=>(b.ryd-a.ryd)||a.st-b.st),ul=a=>`<ul>${a.map(r=>`<li>${r}</li>`).join('')}</ul>`;
+  openDrawer(ds.n,ds.conv,`<h4>Submittal activities</h4>${ul(ds.sub)}<h4>Approval activities</h4>${ul(ds.apr)}<p class="note">Source: ${ds.src}. Review windows use the contract maximum of 21 days.</p><h4>Areas in view</h4>${tbl(['Area','Submittal','Approval'],ss.map(s=>{const w=ds.win(s);return row([`${s.name} ${lt(s.line)}${pri(s)}`,fmtD(wDate(w.sub.st))+' to '+fmtD(wDate(w.sub.en)),fmtD(wDate(w.apr.st))+' to '+fmtD(wDate(w.apr.en))],'DSA~'+k+'~'+s.id);}))}`);}
+function dDesignArea(k,sid){const ds=DSTAGES.find(x=>x.k===k),s=S.find(x=>x.id===sid),w=ds.win(s),p=ds.per(s),ul=a=>`<ul>${a.map(r=>`<li>${r}</li>`).join('')}</ul>`;
+  openDrawer(s.name,ds.n,`<div class="dk">${kpi(Math.round(w.sub.en-w.sub.st)+' wk','Submittal',fmtD(wDate(w.sub.st))+' to '+fmtD(wDate(w.sub.en)),SUBC)}${kpi(Math.round(w.apr.en-w.apr.st)+' wk','Approval',fmtD(wDate(w.apr.st))+' to '+fmtD(wDate(w.apr.en)),APPC)}${kpi(s.cam,'Cameras in this area',s.cams.face+' face recognition · '+s.cams.anpr+' ANPR',C.yellow)}${kpi('M'+(w.apr.en/WPM).toFixed(1),'Stage approved by',fmtD(wDate(w.apr.en)),C.red)}</div>
+  <h4>Submittal: required for this area</h4>${ul(p.sub)}<h4>Approval: required for this area</h4>${ul(p.apr)}
+  <h4>All activities of this stage</h4><div class="grid g2" style="gap:12px"><div><b>Submittal</b>${ul(ds.sub)}</div><div><b>Approval</b>${ul(ds.apr)}</div></div><p class="note">Source: ${ds.src}. Timing is a planning assumption.</p>
   <div class="btnrow"><button class="btn ghost" data-drill="station:${s.id}">Open ${s.name}</button></div>`);}
 function dNode(id){
   if(id.startsWith('DSA~')){const [, k, sid]=id.split('~');return dDesignArea(k,sid);}
