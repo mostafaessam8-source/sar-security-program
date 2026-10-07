@@ -44,12 +44,15 @@ table.tb tr.r{cursor:pointer}table.tb tr.r:hover td{background:#FFF4D6}
 /* gantt */
 .gantt{position:relative;border:1px solid var(--gray);background:#fff;overflow:hidden;font-size:12px}
 .scr .gantt{overflow:visible}.scr .gh{position:sticky;top:0;z-index:5}
+.gh .gm.q{height:46px}.gh .gm.q span.qc{top:2px;height:20px;padding:0;border-left:1px solid #fff;overflow:visible}.gh .gm.q span.mt{top:28px;height:auto;border:0;padding:0;overflow:visible}
+.gm .qc{position:absolute;top:2px;height:20px;border:1px solid #fff;text-align:center;line-height:18px;font-weight:700;background:var(--t05);color:var(--blue);font-size:12px}.gm .qc.o{background:var(--t10)}.gm .mt{position:absolute;top:27px;transform:translateX(-50%);font-size:11px;font-weight:400;color:var(--slate)}
+.gr.big .gl .n{font-size:15px;font-weight:700;color:var(--black)}.gr.big .gl small{font-size:11px}.gr.big .gb{font-size:12.5px;padding-left:8px}.gr.big.lv0 .gl .n{color:var(--black)}
 .gc{padding:3px 6px;text-align:right;white-space:nowrap;display:flex;align-items:center;justify-content:flex-end;border-right:1px solid #EEF1F2;font-size:11px}.gr .gc{color:#4a4a4a}
 .gh{display:flex;background:var(--t10);border-bottom:1px solid var(--gray);font-size:11px;font-weight:700;color:var(--blue)}
 .gh .gl,.gr .gl{flex:0 0 var(--lw,260px);padding:3px 8px;min-width:0}.gh .gm{flex:1;position:relative;height:24px}.gh .gm span{position:absolute;top:0;height:100%;border-left:1px solid #fff;padding:4px 3px;white-space:nowrap;overflow:hidden}
 .gr{display:flex;border-bottom:1px solid #EEF1F2;min-height:var(--rh,24px);align-items:stretch}.gr:hover{background:#FAFCFC}.gr.c{cursor:pointer}.gr.lv1{background:var(--t10);font-weight:700}.gr.lv0{background:var(--t05);font-weight:700;color:var(--blue)}
 .gr .gl{display:flex;flex-direction:column;justify-content:center;border-right:1px solid #EEF1F2;overflow:hidden}.gr .gl small{font-size:10px;color:var(--slate);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gr .gl .n{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gr .gt{flex:1;position:relative}
-.gb{position:absolute;border-radius:2px;color:#fff;font-size:10px;line-height:1;overflow:hidden;white-space:nowrap;padding:0 4px;display:flex;align-items:center;font-weight:700}.gb.dk{color:var(--black)}
+.gb{position:absolute;border-radius:2px;color:#fff;font-size:10px;line-height:1;overflow:hidden;white-space:nowrap;padding:0 4px;display:flex;align-items:center;font-weight:700}.gbo{position:absolute;display:flex;align-items:center;padding-left:6px;font-size:12.5px;font-weight:700;color:var(--black);white-space:nowrap}.gb.dk{color:var(--black)}
 .gd{position:absolute;width:12px;height:12px;transform:translate(-50%,0) rotate(45deg);border:2px solid var(--black);background:#fff}.gd.f{background:var(--black)}
 .gvl{position:absolute;top:0;bottom:0;width:0;border-left:1px dashed #D5DBDD;pointer-events:none}.gband{position:absolute;top:0;bottom:0;pointer-events:none}.gend{position:absolute;top:0;bottom:0;width:0;border-left:2px solid var(--red);pointer-events:none}
 .chip{border:1px solid var(--gray);background:#fff;padding:3px 9px;font-size:12.5px;border-radius:3px;color:var(--black)}.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}.chip:hover{border-color:var(--blue)}
@@ -117,16 +120,17 @@ function saveText(text,name,type){const b=new Blob([text],{type:type||'text/plai
 /* generic gantt (used on the new slides) */
 function gantt(host,o){
   const t0=dd(o.from).getTime(),t1=dd(o.to).getTime(),span=t1-t0,pcr=d=>(dd(d).getTime()-t0)/span*100,pc=d=>Math.max(0,Math.min(100,pcr(d)));
-  const lw=o.lw||240,rh=o.rh||24,cols=o.cols||[],cwid=cols.reduce((a,c)=>a+c.w,0);let h=`<div class="gantt" style="--lw:${lw}px;--rh:${rh}px"><div class="gh"><div class="gl">${o.head||'Activity'}</div>${cols.map(c=>`<div class="gc" style="flex:0 0 ${c.w}px">${c.h}</div>`).join('')}<div class="gm">`;
+  const lw=o.lw||240,rh=o.rh||24,cols=o.cols||[],cwid=cols.reduce((a,c)=>a+c.w,0),QH=!!o.quarters;let h=`<div class="gantt" style="--lw:${lw}px;--rh:${rh}px"><div class="gh"><div class="gl">${o.head||'Activity'}</div>${cols.map(c=>`<div class="gc" style="flex:0 0 ${c.w}px">${c.h}</div>`).join('')}<div class="gm ${QH?'q':''}">`;
   const months=[];let d=new Date(t0);d=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),1));while(d.getTime()<t1){months.push(d.getTime());d=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+1,1));}
-  const step=o.step||1;months.forEach((m,i)=>{const nx=months[i+1]||t1,l=Math.max(0,(m-t0)/span*100),w=(nx-Math.max(m,t0))/span*100;if(i%step===0){const dt=new Date(m);h+=`<span style="left:${l}%;width:${w*step}%">${MN[dt.getUTCMonth()]+" '"+String(dt.getUTCFullYear()).slice(2)}</span>`;}});
+  let qM=0;if(QH){const nM=o.nM,mb=o.mbase||0,stepM=nM>18?6:3;qM=stepM;for(let q=0;q*3<nM;q++){const l=q*3/nM*100,w=Math.min(3,nM-q*3)/nM*100;h+=`<span class="qc ${q%2?'o':''}" style="left:${l}%;width:${w}%">Q${Math.floor(mb/3)+q+1}</span>`;}for(let m=0;m<=nM;m+=stepM){const l=m/nM*100;h+=`<span class="mt" style="left:${l}%;${l>=99?'transform:translateX(-100%)':''}">M${mb+m}</span>`;}}
+  const step=o.step||1;if(!QH)months.forEach((m,i)=>{const nx=months[i+1]||t1,l=Math.max(0,(m-t0)/span*100),w=(nx-Math.max(m,t0))/span*100;if(i%step===0){const dt=new Date(m);h+=`<span style="left:${l}%;width:${w*step}%">${MN[dt.getUTCMonth()]+" '"+String(dt.getUTCFullYear()).slice(2)}</span>`;}});
   h+='</div></div><div style="position:relative">';h+=`<div style="position:absolute;left:${lw+cwid}px;right:0;top:0;bottom:0;pointer-events:none">`;
-  months.forEach((m,i)=>{if(i%step===0){const l=(m-t0)/span*100;if(l>=0&&l<100)h+=`<i class="gvl" style="left:${l}%"></i>`;}});
+  if(QH){for(let m=0;m<=o.nM;m+=qM){const l=m/o.nM*100;if(l<100)h+=`<i class="gvl" style="left:${l}%"></i>`;}}else months.forEach((m,i)=>{if(i%step===0){const l=(m-t0)/span*100;if(l>=0&&l<100)h+=`<i class="gvl" style="left:${l}%"></i>`;}});
   (o.bands||[]).forEach(b=>{h+=`<i class="gband" style="left:${pc(b.s)}%;width:${pc(b.f)-pc(b.s)}%;background:${b.c}"></i>`;});
   (o.lines||[]).forEach(b=>{const p=pcr(b.d);if(p>=0&&p<=100)h+=`<i class="gend" style="left:${p}%;border-color:${b.c||C.red}"></i>`;});h+='</div>';
-  o.rows.forEach((r,i)=>{h+=`<div class="gr ${r.lv===0?'lv0':r.lv===1?'lv1':''} ${r.click||r.lclick?'c':''}" data-i="${i}" style="${r.rh?'min-height:'+r.rh+'px':''}"><div class="gl" style="padding-left:${8+(r.ind||0)*12}px"><span class="n" title="${esc(r.label.replace(/<[^>]+>/g,''))}">${r.label}</span>${r.sub?`<small>${r.sub}</small>`:''}</div>${cols.map((c,ci)=>`<div class="gc" style="flex:0 0 ${c.w}px">${(r.cols||[])[ci]||''}</div>`).join('')}<div class="gt">`;
+  o.rows.forEach((r,i)=>{h+=`<div class="gr ${r.lv===0?'lv0':r.lv===1?'lv1':''} ${r.big?'big':''} ${r.click||r.lclick?'c':''}" data-i="${i}" style="${r.rh?'min-height:'+r.rh+'px':''}"><div class="gl" style="padding-left:${8+(r.ind||0)*12}px"><span class="n" title="${esc(r.label.replace(/<[^>]+>/g,''))}">${r.label}</span>${r.sub?`<small>${r.sub}</small>`:''}</div>${cols.map((c,ci)=>`<div class="gc" style="flex:0 0 ${c.w}px">${(r.cols||[])[ci]||''}</div>`).join('')}<div class="gt">`;
     (r.bars||[]).forEach(b=>{const l=pcr(b.s),w=Math.max(.35,pcr(b.f)-l+(100*86400000/span)),cl=Math.max(0,l),cw=Math.min(100,l+w)-cl;if(cw<=0)return;const hh=b.h||12,top=b.top!=null?b.top:Math.round(((r.rh||rh)-hh)/2);
-      h+=`<i class="gb ${b.dk?'dk':''}" style="left:${cl}%;width:${cw}%;top:${top}px;height:${hh}px;background:${b.c}" title="${esc(b.t||'')}">${b.l&&cw>6?esc(b.l):''}</i>`;});
+      h+=`<i class="gb ${b.dk?'dk':''}" style="left:${cl}%;width:${cw}%;top:${top}px;height:${hh}px;background:${b.c}" title="${esc(b.t||'')}">${b.l&&cw>14?esc(b.l):''}</i>${b.l&&cw<=14?`<span class="gbo" style="left:${cl+cw}%;top:${top}px;height:${hh}px">${esc(b.l)}</span>`:''}`;});
     (r.ms||[]).forEach(m=>{const p=pcr(m.d);if(p<0||p>100)return;h+=`<i class="gd ${m.f?'f':''}" style="left:${p}%;top:${Math.round(((r.rh||rh)-12)/2)}px" title="${esc(m.t||'')}"></i>`;});h+='</div></div>';});
   h+='</div></div>';host.innerHTML=h;if(o.click)$$('.gr.c',host).forEach(e=>e.onclick=ev=>o.click(o.rows[+e.dataset.i],ev));}
 const stationWin=(code,phs)=>{const l=AC.filter(a=>a.stn===code&&a.t==='T'&&phs.includes(a.ph));return l.length?[l.reduce((m,a)=>a.s<m?a.s:m,'9999'),l.reduce((m,a)=>a.f>m?a.f:m,'0000')]:null;};
@@ -234,11 +238,11 @@ slide('high',el=>{
 /* ===== 6 the full schedule (one page) ===== */
 const EPCN={ENG:'Engineering',PRO:'Procurement',CON:'Construction',COM:'Commissioning and handover',PMG:'Project management',MS:'Milestones'};
 const RESPN=['ETECHS','SAR','SAR/HCIS','Vendor'];
-const SCH={view:'sched',group:'wbs',LV:3,flip:new Set(),cols:'dates',metric:'time',F:null};
+const SCH={view:'sched',group:'stn',LV:2,flip:new Set(),cols:'none',metric:'time',F:null};
 function defF(){return {lines:new Set(['NSR','EWR','HHR','PRJ']),prios:new Set([1,2,0]),stns:new Set(ST.map(s=>s.code)),epc:new Set(Object.keys(EPCN)),ph:new Set(Object.keys(PH)),resp:new Set(RESPN),type:new Set(['T','M','SUB','APR']),fl:null,from:0,to:36,q:''};}
 SCH.F=defF();
 const QV=[['full','Full programme'],['six','First six months (priority)'],['p1','Priority 1 stations'],['ena','Enabling works overlap'],['poc','POC: Riyadh (Thumamah)'],['rev','SAR reviews (21 days)'],['ms','Milestones only'],['crit','Longest path (float up to 30 days)'],['oth','Other stations (waves)']];
-function applyPreset(n){const F=SCH.F=defF();SCH.flip=new Set();SCH.group='wbs';SCH.LV=3;SCH.view='sched';
+function applyPreset(n){const F=SCH.F=defF();SCH.flip=new Set();SCH.group='stn';SCH.LV=2;SCH.view='sched';SCH.cols=n==='full'?'none':'dates';
   const proj=()=>F.lines.delete('PRJ');
   if(n==='six'){F.to=8;F.prios=new Set([1,2]);F.stns=new Set(ST.filter(s=>s.prio).map(s=>s.code));SCH.group='stn';SCH.LV=3;}
   else if(n==='p1'){F.prios=new Set([1]);F.stns=new Set(ST.filter(s=>s.prio===1).map(s=>s.code));proj();SCH.group='stn';SCH.LV=4;}
@@ -250,7 +254,7 @@ function applyPreset(n){const F=SCH.F=defF();SCH.flip=new Set();SCH.group='wbs';
   else if(n==='oth'){F.prios=new Set([0]);F.stns=new Set(ST.filter(s=>!s.prio).map(s=>s.code));SCH.group='stn';SCH.LV=3;}
 }
 function openSched(n){applyPreset(n);const i=SL.findIndex(s=>s.id==='sched');SL[i].done=false;go(i);}
-function openStation(code){applyPreset('full');const F=SCH.F;F.stns=new Set([code]);F.lines.delete('PRJ');SCH.group='stn';SCH.LV=4;const i=SL.findIndex(s=>s.id==='sched');SL[i].done=false;go(i);}
+function openStation(code){applyPreset('full');const F=SCH.F;F.stns=new Set([code]);F.lines.delete('PRJ');SCH.group='stn';SCH.LV=4;SCH.cols='dates';const i=SL.findIndex(s=>s.id==='sched');SL[i].done=false;go(i);}
 const winISO=()=>[addM(M.ntp,SCH.F.from),addM(M.ntp,SCH.F.to)];
 function passAct(a){const F=SCH.F;const s=a.stn==='PRJ'?null:SBY[a.stn];
   if(s){if(!F.lines.has(s.line)||!F.prios.has(s.prio)||!F.stns.has(s.code))return false;}else if(!F.lines.has('PRJ'))return false;
@@ -258,19 +262,19 @@ function passAct(a){const F=SCH.F;const s=a.stn==='PRJ'?null:SBY[a.stn];
   const t=(F.type.has('T')&&a.t==='T')||(F.type.has('M')&&a.t!=='T')||(F.type.has('SUB')&&a.sa==='Submittal')||(F.type.has('APR')&&a.sa==='Approval');if(!t)return false;
   if(F.fl!=null&&a.fl>F.fl)return false;const[w0,w1]=winISO();if(a.f<w0||a.s>=w1)return false;
   if(F.q){const q=F.q.toLowerCase();if(!(a.name_l||(a.name_l=(a.n+' '+a.id+' '+(s?s.name:'project')).toLowerCase())).includes(q))return false;}return true;}
-const PKG={P1:['Priority 1: Makkah and Riyadh (Thumamah)',0],P2:['Priority 2: Riyadh (Malaz)',1],NSR:['NSR: North South Railway (other stations)',2],EWR:['EWR: East West Railway (other stations)',3],HHR:['HHR: Haramain High Speed Rail (other stations)',4]};
+const PKG={P1:['Priority 1: Makkah + Thumamah',0],P2:['Priority 2: Riyadh (Malaz)',1],NSR:['NSR: North South Railway',2],EWR:['EWR: East West Railway',3],HHR:['HHR: Haramain High Speed Rail',4]};
 const pkgOf=s=>s.prio===1?'P1':s.prio===2?'P2':s.line;
 const WRANK={'0580':0,PM:1,ENG:2,PRO:3,CON:4,COM:5},EPO={PMG:0,ENG:1,PRO:2,CON:3,COM:4,MS:5};
 const WBN=Object.fromEntries(DATA.wbs.map(w=>[w.c,w]));
 function buildTree(acts){const nodes=new Map();
-  const mk=(id,level,label,sub,ord,parent)=>{let n=nodes.get(id);if(!n){n={id,level,label,sub,ord,kids:[],acts:[],s:'9999',f:'0000',c:0,p:0,cnt:0,par:parent};nodes.set(id,n);if(parent)parent.kids.push(n);}return n;};
+  const mk=(id,level,label,sub,ord,parent)=>{let n=nodes.get(id);if(!n){n={id,level,label,sub,ord,kids:[],acts:[],stns:new Set(),s:'9999',f:'0000',c:0,p:0,cnt:0,par:parent};nodes.set(id,n);if(parent)parent.kids.push(n);}return n;};
   const root=mk('0580',1,'Project 0580','',0,null);
   acts.forEach(a=>{let chain=[root];
     if(SCH.group==='wbs'){const cs=[];let c=a.w;while(c){cs.push(c);c=WBN[c].p;}cs.reverse();cs.slice(1).forEach(c=>{const w=WBN[c];chain.push(mk('w:'+c,w.l,esc(w.n),c,(WRANK[c.split('.')[0]]??9)*1000,chain[chain.length-1]));});}
-    else{if(a.stn==='PRJ'){chain.push(mk('prj',2,'Project level','mobilization, baselines, closeout',0,root));}
+    else{if(a.id==='PRJ-M1250'){const pn=mk('pk:P1',2,PKG.P1[0],'',PKG.P1[1]+1,root);chain.push(pn);}else if(a.stn==='PRJ'){const clo=['PRJ-C1010','PRJ-MX99'].includes(a.id);chain.push(mk(clo?'prjc':'prjm',2,clo?'Closeout, warranty and support':'Mobilization and baseline',clo?'closeout pack and contract completion':'baseline, survey and design milestones',0,root));}
       else{const s=SBY[a.stn],pk=pkgOf(s);const pn=mk('pk:'+pk,2,PKG[pk][0],'',PKG[pk][1]+1,root);chain.push(pn);chain.push(mk('st:'+s.code,3,esc(s.name)+star(s)+' '+lt(s.line),'',ST.indexOf(s),pn));}
-      chain.push(mk(chain[chain.length-1].id+'|'+a.ep,chain.length+1,EPCN[a.ep],'',EPO[a.ep]??9,chain[chain.length-1]));}
-    chain.forEach(n=>{if(a.s<n.s)n.s=a.s;if(a.f>n.f)n.f=a.f;n.c+=a.c;n.p+=a.p;n.cnt++;});chain[chain.length-1].acts.push(a);});
+      if(a.stn!=='PRJ'&&a.id!=='PRJ-M1250')chain.push(mk(chain[chain.length-1].id+'|'+a.ep,chain.length+1,EPCN[a.ep],'',EPO[a.ep]??9,chain[chain.length-1]));}
+    chain.forEach(n=>{if(a.s<n.s)n.s=a.s;if(a.f>n.f)n.f=a.f;n.c+=a.c;n.p+=a.p;n.cnt++;if(a.stn!=='PRJ')n.stns.add(a.stn);});chain[chain.length-1].acts.push(a);});
   return root;}
 let ST_OPEN=null;
 function popMulti(host,btn,title,opts,set,all,onchange){const old=$('.pop',host);if(old)old.remove();
@@ -319,11 +323,15 @@ slide('sched',el=>{
   };
   el.addEventListener('click',()=>{const p=$('.pop',tb);if(p)p.remove();});
   function treeRows(acts){const root=buildTree(acts),rows=[];const force=!!SCH.F.q;
-    const sortKids=n=>n.kids.sort((a,b)=>a.ord-b.ord||(a.s<b.s?-1:a.s>b.s?1:a.label<b.label?-1:1));
+    const sortKids=n=>n.kids.sort((a,b)=>a.s<b.s?-1:a.s>b.s?1:a.ord-b.ord||(a.label<b.label?-1:1));
     const dcol=n=>SCH.cols==='dates'?[fD(n.s).slice(0,6)+fD(n.s).slice(-2),fD(n.f).slice(0,6)+fD(n.f).slice(-2),''] :SCH.cols==='cost'?[fN(n.c),fN(n.p)]:[];
     const walk=n=>{const open=force||((n.level<SCH.LV)!==SCH.flip.has(n.id));const has=n.kids.length||n.acts.length;
-      const lvT=n.level===1?0:n.level===2?1:2;
-      rows.push({lv:lvT,ind:n.level-1,label:`${has?(open?'▾ ':'▸ '):'&nbsp;&nbsp; '}<b style="color:${C.blue};font-size:10.5px">L${n.level}</b> ${n.label}`,sub:(n.sub||'')+(n.sub?' · ':'')+n.cnt+' activities',cols:dcol(n),bars:[{s:n.s,f:n.f,c:C.black,h:6,t:fD(n.s)+' to '+fD(n.f)}],
+      const lvT=n.level===1?0:n.level===2?1:2;const big=n.level<=2;const NC=id=>id==='0580'?C.blue:id==='pk:P1'?C.red:id==='pk:P2'?'#E27F81':id==='pk:NSR'?C.blue:id==='pk:EWR'?C.yellow:id==='pk:HHR'?C.black:C.slate;const col=NC(n.id);
+      const val=[...n.stns].reduce((a,c)=>a+SBY[c].val,0);const stc=n.id.startsWith('st:')?SBY[n.id.slice(3)]:null;
+      const sub=n.id==='prjc'?'rolling per station; 1-year defects liability':n.level===1?n.stns.size+' stations · SAR '+fM(val)+'M':n.id.startsWith('pk:')?n.stns.size+(['pk:NSR','pk:EWR','pk:HHR'].includes(n.id)?' other':'')+(n.stns.size===1?' station':' stations')+' · SAR '+fM(val)+'M':stc?stc.line+' · SAR '+fM(stc.val)+'M · '+n.cnt+' activities':((n.sub?n.sub+' · ':'')+n.cnt+' activities');
+      const ms=n.id==='pk:P1'&&n.stns.size?[{d:[...n.stns].map(c=>ABY[c+'-T1100'].s).sort().pop(),t:'SAT complete, priority 1',f:0}]:[];
+      rows.push({lv:lvT,big,rh:big?36:undefined,ind:big?n.level-1:n.level-1,label:`${has?(open?'▾ ':'▸ '):'&nbsp;&nbsp; '}${big?'':`<b style="color:${C.blue};font-size:10.5px">L${n.level}</b> `}${n.label}`,sub,cols:dcol(n),
+        bars:[(()=>{let bs=n.s,bf=n.f;if(n.id==='prjc'){const ends=ST.filter(x=>SCH.F.lines.has(x.line)&&SCH.F.stns.has(x.code)).map(x=>x.end).sort();if(ends.length)bs=ends[0];bf=M.end;}return {s:bs,f:bf,c:big?col:C.black,h:big?20:6,dk:big&&col===C.yellow,l:big?(n.level===1?'NTP at M0, term ends M36':'M'+mFrac(bs).toFixed(1)+' to M'+mFrac(bf).toFixed(1)):'',t:fD(bs)+' to '+fD(bf)};})()],ms,
         lclick:has?()=>{if(SCH.flip.has(n.id))SCH.flip.delete(n.id);else SCH.flip.add(n.id);const st=$('#sc',el).scrollTop;draw();$('#sc',el).scrollTop=st;}:null,
         click:()=>{const l=[];const grab=x=>{x.acts.forEach(a=>l.push(a));x.kids.forEach(grab);};grab(n);l.sort((a,b)=>a.s<b.s?-1:1);drawer('L'+n.level+' · '+n.label.replace(/<[^>]+>/g,''),l.length+' activities · '+fD(n.s)+' to '+fD(n.f)+' · cost SAR '+fN(n.c),actTable(l.slice(0,400))+(l.length>400?'<p class="dn">First 400 of '+l.length+' activities; narrow the filters for the rest.</p>':''));}});
       if(open){sortKids(n);n.kids.forEach(walk);n.acts.slice().sort((a,b)=>a.s<b.s?-1:a.s>b.s?1:a.id<b.id?-1:1).forEach(a=>rows.push({lv:2,ind:n.level,label:'<span style="color:'+C.slate+';font-size:10.5px">A</span> '+esc(a.n),sub:a.id+(a.t==='T'?' · '+a.d+' d':''),cols:SCH.cols==='dates'?[fD(a.s).slice(0,6)+fD(a.s).slice(-2),a.t==='T'?fD(a.f).slice(0,6)+fD(a.f).slice(-2):'',a.t==='T'?a.d+'':'']:SCH.cols==='cost'?[fN(a.c),fN(a.p)]:[],
@@ -333,7 +341,7 @@ slide('sched',el=>{
     if(SCH.view==='sched'){const rows=treeRows(acts);const[w0,w1]=winISO();const span=(dd(w1)-dd(w0))/864e5;
       const cols=SCH.cols==='dates'?[{h:'Start',w:74},{h:'Finish',w:74},{h:'Days',w:44}]:SCH.cols==='cost'?[{h:'Cost SAR',w:90},{h:'Progress SAR',w:96}]:[];
       sc.innerHTML='<div id="gs"></div>';if(!acts.length){sc.innerHTML='<p class="dn" style="padding:20px">No activity matches the filters. Use Reset all filters.</p>';return;}
-      gantt($('#gs',sc),{from:w0,to:w1,rows,lw:330,rh:24,cols,step:span>500?3:span>250?2:1,head:'WBS / activity (click the name to expand, the bar for details)',bands:f.from===0?[{s:addM(M.ntp,4),f:addM(M.ntp,6),c:'rgba(118,134,146,.16)'}]:[],lines:[{d:M.end,c:C.red},{d:addM(M.ntp,2),c:C.blue,t:'Month 2'}],click:(r,ev)=>{if(r.lclick&&ev&&ev.target.closest('.gl'))r.lclick();else if(r.click)r.click();else if(r.lclick)r.lclick();}});}
+      gantt($('#gs',sc),{from:w0,to:w1,rows,lw:370,rh:24,cols,head:'Activity',quarters:true,nM:f.to-f.from,mbase:f.from,bands:[],lines:[{d:w1,c:C.red}],click:(r,ev)=>{if(r.lclick&&ev&&ev.target.closest('.gl'))r.lclick();else if(r.click)r.click();else if(r.lclick)r.lclick();}});}
     else if(SCH.view==='prog')drawProg(sc);else drawPay(sc);}
   function selStations(){const F=SCH.F;return ST.filter(s=>F.lines.has(s.line)&&F.prios.has(s.prio)&&F.stns.has(s.code));}
   function drawProg(sc){const sel=selStations();const cs=Array(36).fill(0),ps=Array(36).fill(0);sel.forEach(s=>{s.cc.forEach((v,i)=>cs[i]+=v);s.pc.forEach((v,i)=>ps[i]+=v);});
