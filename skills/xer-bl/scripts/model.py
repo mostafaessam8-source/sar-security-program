@@ -54,7 +54,6 @@ def build(k_stretch=1.0, buffer_days=20):
                   ('DET', 'Detailed design'), ('IFC', 'IFC and shop drawings'), ('HCS', 'HCIS documentation (Stage 3 and 4)'), ('ASB', 'As-built and O&M documentation')]
         for sc, sn in stages:
             wbs(f'{eng}.{sc}', sn, eng); wbs(f'{eng}.{sc}.SUB', 'Submittal', f'{eng}.{sc}'); wbs(f'{eng}.{sc}.APR', 'Approval', f'{eng}.{sc}')
-            if sc == 'SRV': wbs(f'{eng}.SRV.PRM', 'Site access permit', f'{eng}.SRV')
         for pc, pn in [('CCT', 'CCTV system'), ('VMS', 'Video management and video wall'), ('ACC', 'Access control and intercom'), ('UPN', 'UPS, network and cabinets'), ('LOG', 'FAT and logistics')]:
             wbs(f'{pro}.{pc}', pn, pro)
         wbs(f'{con}.ENA', 'Enabling works', con); wbs(f'{con}.CIV', 'Civil works', con); wbs(f'{con}.INS', 'Installation', con)
@@ -70,7 +69,8 @@ def build(k_stretch=1.0, buffer_days=20):
             return a
         c1 = rnd(0.15 * E); p1 = rnd(0.25 * E); d1 = rnd(0.40 * E); i1 = E - (c1 + p1 + d1); L = rnd(0.15 * E); h1 = E - (c1 + p1 + L)
         ENGK = dict(EPC='ENG', DISC='DOCS')
-        A('E1005', 'Survey: site access permit - application and approval (two months)', f'{eng}.SRV.PRM', 45, [], RESP='SAR', STAGE='Survey', SUBAPP='Approval', **ENGK)
+        wbs(f'PM.MOB.{c}', f'Survey access permit - {name}', 'PM.MOB')
+        A('E1005', 'Mobilization: site access permit for the survey - application and approval (two months)', f'PM.MOB.{c}', 45, [], EPC='PMG', DISC='PM', RESP='SAR', STAGE='Survey', SUBAPP='Approval')
         A('E1010', 'Survey: submittal of site survey and as-found report', f'{eng}.SRV.SUB', p['sv'], [('E1005', 'FS', 0)] + ([('PRJ-M1150', 'FS', 0)] if prio else []), RESP='ETECHS', STAGE='Survey', SUBAPP='Submittal', **ENGK)
         A('E1020', 'Survey: SAR approval of survey report', f'{eng}.SRV.APR', p['appr'], [('E1010', 'FS', 0)], RESP='SAR', STAGE='Survey', SUBAPP='Approval', **ENGK)
         A('E1030', 'Concept design: submittal', f'{eng}.CNC.SUB', c1, [('E1010', 'FS', 0)], RESP='ETECHS', STAGE='Concept', SUBAPP='Submittal', **ENGK)
