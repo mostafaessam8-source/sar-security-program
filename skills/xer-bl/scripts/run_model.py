@@ -11,7 +11,7 @@ def solve(buffer_days=20):
         k = k100 / 100.0
         lag = {}
         for sid, s in ST.items():
-            if s['ryd']: lag[sid] = 0; continue
+            if s['prio']: lag[sid] = 0; continue
             D = rnd_(s['start_w'] * 5 * k)
             lag[sid] = max(0, D - (t_db + 1))
         order, pred_of, ES, EF = cpm(lag)

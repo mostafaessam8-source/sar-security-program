@@ -5,7 +5,7 @@ description: Build a baseline (BL) schedule submittal for Primavera P6 24 as an 
 
 # XER BL: baseline schedule submittal for P6 24
 
-Deliver four files together: `<Project>_Baseline.xer`, `<Project>_BOQ_Cost_Mapping.xlsx`, `<Project>_Schedule_Narrative.docx`, `README_P6_Import.md`. Reference implementation (SAR security programme) is in `scripts/` (model_base, model, run_model, xer, validate, out_xlsx, out_docx). Reuse the structure, replace the data.
+Deliver five files together: `<No>_Schedule_Baseline_Rev<n>.xer`, `<No>_BOQ_Cost_Mapping.xlsx`, `<No>_Schedule_Narrative.docx`, `<No>_README_P6_Import.md` and the interactive offline presentation `<No>_Interactive_Presentation_Rev<n>.html`. Project number and the official project name (verbatim as supplied, flag doubtful spelling) go on every output: file names, XER project ID and root WBS, workbook summary, narrative cover and header, presentation, site header. Reference implementation (SAR security programme) is in `scripts/` (model_base, model, run_model, xer, validate, out_xlsx, out_docx). Reuse the structure, replace the data.
 
 ## Principles (fixed by the user, keep for every project)
 1. **Single source**: use only the contract file the user names as final. Never mix other projects' files.
@@ -64,4 +64,17 @@ Deliver four files together: `<Project>_Baseline.xer`, `<Project>_BOQ_Cost_Mappi
 ## Change log
 - v1 baseline method: two resources, EPC WBS, design stages with submittal/approval, logic-driven completion, NTP milestone.
 - v2: Physical % complete; both resources Material in SAR with price switch; full PROJECT table for import.
+- v4 (Rev 1): six-month plan with overlap, priority tiers, POC, 21-day reviews, station-level WBS, PHASE code, project number/name on all outputs, interactive offline presentation.
 - v3: Invoicing_Monthly detailed sheet; BOQ ID and BOQ Description as the first two columns of BOQ_Mapping.
+
+## Rev 1 additions (project 0580)
+- **First-six-months structure**: months 1-2 mobilization and site survey, months 3-6 design for the priority stations, enabling works starting at the start of month 5 (overlap of the last two design months). Drive it with logic, not dates: project milestones (mobilization and survey complete, design complete) linked from NTP with working-day lags computed from the calendar (`M2_IDX`, `M6_IDX`, `ENA_IDX` in `model_base.py`); tune the priority design submittal chain (`DESIGN_E_P1`) so design ends with month 6.
+- **WBS**: level 1 project, level 2 EPC phase, level 3 station, level 4 stage/package, level 5 submittal-approval/area. Priority and railway are activity codes, not WBS levels.
+- **Priority tiers** (`PRIO` in model_base): tier 1 starts surveys at once, carries the four-month design and runs enabling/civil works in parallel with design (equipment still released only after SAR approval, MS3); tier 2 shorter design; others in waves. Wave search skips priority stations.
+- **POC pattern** (Riyadh Thumamah): plan submittal, 21-day approval, network test bed, CCTV and inspection/access-control demonstration, integrated test, report, consultant inspection, approval (one month in total), POC-approved milestone as predecessor of MS3. No Annex 3 POC item: carve 15% of the station MS2/MS3 buckets and 10% of the station engineering progress weight, and say so.
+- **Review period**: every SAR review is 21 days = 15 working days in a Sun-Thu calendar (`REVIEW_WD`); survey approval and taking-over included.
+- **Enabling works** (X1010, X1020) carved from the civil share of MS5; priority stations start them in month 5, others after MS3.
+- **Activity code `PHASE`** (programme phase) is derived in `xer.py` (`phase_of`) and used by the presentation Gantt colours.
+- **Interactive offline presentation**: `export_pres.py` writes `pres_data.json` from the same model (activities, per-station monthly cost and time progress, invoices); `build_pres.py` inlines data, Chart.js and logos into `pres_template.html`. Slides: cover, scope x3, first six months, priorities and POC, review periods, Level 2, Level 3 by station (activities and milestones, monthly progress with CSV, payment milestones), cash flow, dashboard with month slider, closing. Test with headless Chromium (no console errors, click through stations, tabs, drawers, dashboard filters).
+- **Site button**: a Presentation button next to Publish downloads the presentation from a base64 payload embedded in both the hosted page and the offline copy.
+- The presentation, XER, workbook and narrative must come from the same model run; never leave an older revision in another deliverable without saying so.

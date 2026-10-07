@@ -6,7 +6,7 @@ def d_end(i): return WORK[i].strftime('%Y-%m-%d') + ' 17:00'
 
 PROJ_ID = 1001
 CLNDR_ID = 1
-SHORT = 'SAR-SEC'
+SHORT = PROJECT_NO
 
 def clndr_data():
     def day(n, work):
@@ -85,16 +85,18 @@ def build_xer(lag):
             [[3101, 3001, '', 0, '2026-01-01 00:00', 0, 0, 0, 0], [3102, 3002, 1000000, 1, '2026-01-01 00:00', 0, 0, 0, 0]])
     # activity code types
     CT = OrderedDict([('EPC', 'EPC phase'), ('AREA', 'Area'), ('STN', 'Station'), ('RAIL', 'Railway'), ('DISC', 'Discipline'), ('RESP', 'Responsibility'),
-                      ('MST', 'Payment milestone'), ('STAGE', 'Design stage'), ('SUBAPP', 'Submittal or approval'), ('PRIO', 'Priority')])
+                      ('MST', 'Payment milestone'), ('STAGE', 'Design stage'), ('SUBAPP', 'Submittal or approval'), ('PRIO', 'Priority'), ('PHASE', 'Programme phase')])
     LABEL = {'EPC': {'ENG': 'Engineering', 'PRO': 'Procurement', 'CON': 'Construction', 'COM': 'Commissioning and handover', 'PMG': 'Project management', 'MS': 'Milestone'},
-             'AREA': {'RYD': 'Riyadh priority', 'NSR': 'NSR', 'EWR': 'EWR', 'HHR': 'HHR', 'PRJ': 'Project level'},
+             'AREA': {'NSR': 'NSR', 'EWR': 'EWR', 'HHR': 'HHR', 'PRJ': 'Project level'},
              'RAIL': {'NSR': 'NSR', 'EWR': 'EWR', 'HHR': 'HHR', 'ALL': 'All railways'},
              'DISC': {'DOCS': 'Design documentation', 'CCTV': 'CCTV system', 'VMS': 'Video management and wall', 'ACC': 'Access control and intercom', 'UPSNET': 'UPS, network and cabinets', 'CIVIL': 'Civil works', 'TC': 'Testing, commissioning and handover', 'PM': 'Project management and logistics'},
              'RESP': {'ETECHS': 'ETECHS', 'SAR': 'SAR', 'SAR/HCIS': 'SAR and HCIS', 'Vendor': 'Vendor'},
              'MST': {'-': 'Not a payment milestone'} | {k: f'{k} {v[0]}' for k, v in MS.items()},
-             'STAGE': {'-': 'Not a design stage', 'Survey': 'Site survey', 'Concept': 'Concept design', 'Preliminary': 'Preliminary design', 'Detailed': 'Detailed design', 'IFC': 'IFC and shop drawings', 'HCIS': 'HCIS documentation', 'As-built': 'As-built and O&M'},
+             'STAGE': {'-': 'Not a design stage', 'POC': 'Proof of concept', 'Survey': 'Site survey', 'Concept': 'Concept design', 'Preliminary': 'Preliminary design', 'Detailed': 'Detailed design', 'IFC': 'IFC and shop drawings', 'HCIS': 'HCIS documentation', 'As-built': 'As-built and O&M'},
              'SUBAPP': {'-': 'Not applicable', 'Submittal': 'Submittal', 'Approval': 'Approval'},
-             'PRIO': {'Riyadh priority': 'Riyadh priority', 'Standard': 'Standard'}}
+             'PRIO': {'Priority 1': 'Priority 1 - Makkah and Riyadh (Thumamah)', 'Priority 2': 'Priority 2 - Riyadh (Malaz)', 'Standard': 'Standard'},
+             'PHASE': {'MOB': 'Mobilization and site survey (months 1-2)', 'DES': 'Design (months 3-6)', 'POC': 'Proof of concept - Riyadh (Thumamah)', 'ENA': 'Enabling works',
+                       'PRO': 'Procurement and supply', 'CON': 'Construction and installation', 'COM': 'Testing, commissioning and handover', 'PMG': 'Project management and closeout', 'MS': 'Milestones'}}
     LABEL['STN'] = {'PRJ': 'Project level'} | {s['code']: f"{s['name']} ({s['line']})" for s in ST.values()}
     tid = {}; types = []; vals = []; vid = {}
     n_val = 0
@@ -122,7 +124,16 @@ def build_xer(lag):
     tr = 0; k_ta = 0; k_tp = 0
     def lagv(l): return (lag[l[1]] if isinstance(l, tuple) else l)
     DEFAULTS = dict(EPC='PMG', AREA='PRJ', STN='PRJ', RAIL='ALL', DISC='PM', RESP='ETECHS', MST='-', STAGE='-', SUBAPP='-', PRIO='Standard')
+    def phase_of(code, a):
+        suf = code.split('-', 1)[1]
+        if a.typ != 'TT_Task' and not suf.startswith('POC'): return 'MS'
+        if code.startswith('PRJ-'): return 'MOB' if suf[0] == 'A' and suf < 'A2000' else ('PMG')
+        if suf.startswith('POC'): return 'POC'
+        if suf in ('E1010', 'E1020'): return 'MOB'
+        if suf[0] == 'E': return 'COM' if suf in ('E1130', 'E1140') else 'DES'
+        return {'X': 'ENA', 'P': 'PRO', 'C': 'CON', 'T': 'COM'}[suf[0]]
     for code, a in ACTS.items():
+        a.codes.setdefault('PHASE', phase_of(code, a))
         for kk, vv in DEFAULTS.items(): a.codes.setdefault(kk, vv)
         if a.codes['MST'] == '-' and a.cost_ms: a.codes['MST'] = a.cost_ms[0]
     for code, a in ACTS.items():
@@ -153,6 +164,7 @@ def build_xer(lag):
     x.table('TASKACTV', ['task_id', 'actv_code_type_id', 'actv_code_id', 'proj_id'], ta)
     hdr = ['ERMHDR', '24.12', '2026-10-06', 'Project', 'admin', 'ETECHS Planning', 'PMDB', 'Project Management', 'SAR']
     meta = dict(order=order, pred_of=pred_of, ES=ES, EF=EF, LS=LS, LF=LF, succ=succ, tids=tids, wid=wid, ff=ff, lag=lag)
+    meta['LABEL'] = LABEL
     return x.dump(hdr), meta
 
 if __name__ == '__main__':

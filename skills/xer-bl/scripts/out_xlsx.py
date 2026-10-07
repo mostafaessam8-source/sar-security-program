@@ -10,7 +10,7 @@ os.makedirs(OUT, exist_ok=True)
 
 k, lag = solve()
 txt, meta = build_xer(lag)
-open(f'{OUT}/SAR_Security_Program_Baseline.xer', 'w', encoding='utf-8', newline='\n').write(txt)
+open(f'{OUT}/0580_Schedule_Baseline_Rev1.xer', 'w', encoding='utf-8', newline='\n').write(txt)
 ES, EF, LS, LF = meta['ES'], meta['EF'], meta['LS'], meta['LF']
 
 BLUE = '00778B'; TINT = 'F2F8F9'; TINT2 = 'E6F1F4'; GRAY = 'C8C9C7'
@@ -125,20 +125,20 @@ wm.freeze_panes = 'E5'; wm.auto_filter.ref = f'A4:V{last_map}'
 wk = wb.create_sheet('Distribution_Keys')
 wk['A1'] = 'Distribution keys (cost within each payment milestone, and progress weights)'; wk['A1'].font = Font(name='Calibri', bold=True, size=14, color=BLUE)
 head(wk, 3, ['Milestone', 'Activity template', 'Key', 'Basis'], [12, 60, 12, 90])
-tmpl = [('MS2', 'Survey, concept, preliminary, detailed, IFC, HCIS submittals', '5 / 10 / 20 / 40 / 20 / 5 %', 'Design effort split by stage; the railway design and engineering package sits inside the station price'),
-        ('MS3', 'Approval activities of the same six stages', '5 / 10 / 20 / 40 / 20 / 5 %', 'Mirror of the submittal key (SAR review windows of 21 days)'),
+tmpl = [('MS2', 'Survey, concept, preliminary, detailed, IFC, HCIS submittals', '5 / 10 / 20 / 40 / 20 / 5 %', 'Design effort split by stage; the railway design and engineering package sits inside the station price. Riyadh (Thumamah): 85% of the keys, 15% to the POC submittal and test activities (no separate POC item in Annex 3)'),
+        ('MS3', 'Approval activities of the same six stages', '5 / 10 / 20 / 40 / 20 / 5 %', 'Mirror of the submittal key. Every SAR review is 21 days (15 working days). Riyadh (Thumamah): 15% to the POC approvals (plan 4%, consultant inspection 5%, approval 6%)'),
         ('MS4', 'Manufacture CCTV, VMS, access control, UPS and network', '75% split by BOQ section share', 'A1, A2, A3 and A4+A5 shares of the station equipment value'),
         ('MS4', 'FAT / shipping and customs / delivery and receiving', '5 / 15 / 5 %', 'Fixed keys; spares and logistics sit inside delivery'),
-        ('MS5', 'Civil trenches and duct banks / poles and foundations', '55 / 45 % of the A6 share', 'A6 civil works share of station hardware'),
+        ('MS5', 'Enabling works / civil trenches and duct banks / poles and foundations', '4 + 6 / 50 / 40 % of the A6 share', 'A6 civil works share of station hardware; enabling works carved from the civil line'),
         ('MS5', 'Install cabinets / cabling / CCTV / VMS / access control', '20 / 30 / 25 / 15 / 10 % of (1 - A6 share)', 'Installation is included in the unit prices (Annex 3 works included)'),
         ('MS6', 'Pre-commissioning / SAT', '40 / 60 %', 'Fixed keys'),
         ('MS7', 'As-built submittal / approval / training / trial operation / handover', '15 / 5 / 15 / 35 / 30 %', 'Fixed keys'),
         ('MS1', 'Performance security / initial baseline / site establishment / mobilization submittals', '15 / 10 / 45 / 30 %', 'Project level, 20% of the total price')]
 for i, t in enumerate(tmpl): put(wk, 4 + i, list(t))
 head(wk, 15, ['EPC phase', 'Component', 'Weight (% of station progress)', 'Basis'])
-pw = [('Engineering', 'Survey 8, concept 10, preliminary 18, detailed 30, IFC 18, HCIS 6, as-built 10 (of 12%); each stage split submittal / approval by duration', 12, 'Typical EPC effort weighting for design'),
+pw = [('Engineering', 'Survey 8, concept 10, preliminary 18, detailed 30, IFC 18, HCIS 6, as-built 10 (of 12%); each stage split submittal / approval by duration. Riyadh (Thumamah): 90% of this weight to the stages, 10% to the POC activities', 12, 'Typical EPC effort weighting for design'),
       ('Procurement', 'Manufacture 24 (split by BOQ package share), FAT 4, shipping 8, delivery 4', 40, 'Procurement carries the largest share of a supply-led security contract'),
-      ('Construction', 'Trenches 8, poles 6, cabinets 3, cabling 6, CCTV 5, VMS 3, access 2', 33, 'Site works'),
+      ('Construction', 'Enabling works 2.5, trenches 6.5, poles 5, cabinets 3, cabling 6, CCTV 5, VMS 3, access 2', 33, 'Site works'),
       ('Commissioning and handover', 'Pre-commissioning 3, SAT 4, training 2, trial operation 3, handover 3', 15, 'Testing, trial and acceptance')]
 for i, t in enumerate(pw): put(wk, 16 + i, list(t))
 put(wk, 20, ['Total stations', '', '=SUM(C16:C19)', 'Station weights sum to 100%'], None, bold=True, fill=TINT2)
@@ -181,10 +181,10 @@ head(wc, 1, ['Code type', 'Code value', 'Description', 'Activities'], [18, 14, 4
 cnt = collections.Counter();
 for a in ACTS.values():
     for kk2, vv in a.codes.items(): cnt[(kk2, vv)] += 1
-CTN = {'EPC': 'EPC phase', 'AREA': 'Area', 'STN': 'Station', 'RAIL': 'Railway', 'DISC': 'Discipline', 'RESP': 'Responsibility', 'MST': 'Payment milestone', 'STAGE': 'Design stage', 'SUBAPP': 'Submittal or approval', 'PRIO': 'Priority'}
+CTN = {'EPC': 'EPC phase', 'AREA': 'Area', 'STN': 'Station', 'RAIL': 'Railway', 'DISC': 'Discipline', 'RESP': 'Responsibility', 'MST': 'Payment milestone', 'STAGE': 'Design stage', 'SUBAPP': 'Submittal or approval', 'PRIO': 'Priority', 'PHASE': 'Programme phase'}
 rr_ = 2
 for (kk2, vv), c in sorted(cnt.items()):
-    put(wc, rr_, [CTN[kk2], vv, '', c]); rr_ += 1
+    put(wc, rr_, [CTN[kk2], vv, meta['LABEL'][kk2].get(vv, ''), c]); rr_ += 1
 ww = wb.create_sheet('WBS')
 head(ww, 1, ['WBS code', 'Name', 'Level', 'Parent'], [30, 70, 8, 30])
 for i, (code, w) in enumerate(WBS.items()): put(ww, 2 + i, [code, w['name'], w['level'], w['parent'] or ''])
@@ -196,17 +196,17 @@ for n_ in meta['order']:
 
 # ---------------------------------------------------------------- Summary first sheet
 wsu = wb.create_sheet('Summary', 0)
-wsu['A1'] = 'SAR Passengers Security Checking: baseline schedule, cost loading and BOQ mapping'; wsu['A1'].font = Font(name='Calibri', bold=True, size=15, color=BLUE)
-lines = [('Source of cost', 'Draft contract with ETECHS (22 Jan 2024): Annex 3 price table (Revised-02) and clause 15 payment milestones'),
+wsu['A1'] = PROJECT_NAME + ' | ' + REVISION + ': baseline schedule, cost loading and BOQ mapping'; wsu['A1'].font = Font(name='Calibri', bold=True, size=15, color=BLUE)
+lines = [('Project number and name', PROJECT_NAME), ('Source of cost', 'Draft contract with ETECHS (22 Jan 2024): Annex 3 price table (Revised-02) and clause 15 payment milestones'),
          ('Contract price', PO), ('Project start (NTP milestone)', START), ('Contract term end (36 months)', TERM_END),
          ('Activities', len([1 for a in ACTS.values()])), ('Tasks (2 resources each)', len([1 for a in ACTS.values() if a.typ == "TT_Task"])), ('Milestones', len([1 for a in ACTS.values() if a.typ != "TT_Task"])),
-         ('Cost loaded in P6 (SAR)', f'=BOQ_Mapping!N{last_map+1}'), ('Difference to contract price', f'=B10-B4'), ('Progress points loaded', f'=BOQ_Mapping!R{last_map+1}'),
+         ('Cost loaded in P6 (SAR)', f'=BOQ_Mapping!N{last_map+1}'), ('Difference to contract price', f'=B11-B5'), ('Progress points loaded', f'=BOQ_Mapping!R{last_map+1}'),
          ('Working calendar', 'Sunday to Thursday, 8 hours; KSA official holidays; Eid dates are estimates to be updated'), ('How to read', 'Station_BOQ gives the BOQ value of each station; Payment_Milestones applies the contract payment conditions; BOQ_Mapping shows each activity cost; Distribution_Keys explains the keys; S_Curve shows cost against progress; Invoicing_Monthly lists every invoice by month, milestone and station.')]
 for i, (a_, b_) in enumerate(lines):
     wsu.cell(row=3 + i, column=1, value=a_).font = BOLD; c = wsu.cell(row=3 + i, column=2, value=b_); c.font = BF
     if isinstance(b_, (int,)) and a_ == 'Contract price': c.number_format = '#,##0'
     if isinstance(b_, dt.date): c.number_format = 'dd-mmm-yyyy'
-wsu['B10'].number_format = '#,##0'; wsu['B11'].number_format = '#,##0'; wsu['B12'].number_format = '#,##0'
+wsu['B5'].number_format = '#,##0'; wsu['B11'].number_format = '#,##0'; wsu['B12'].number_format = '#,##0'; wsu['B13'].number_format = '#,##0'
 wsu.column_dimensions['A'].width = 34; wsu.column_dimensions['B'].width = 120
 # ---------------------------------------------------------------- Invoicing per month (detailed)
 wi = wb.create_sheet('Invoicing_Monthly')
@@ -258,5 +258,5 @@ for j in range(len(snames)): wi.column_dimensions[L(12 + j)].width = 14 if False
 
 for w_ in wb.worksheets:
     w_.sheet_view.showGridLines = False
-wb.save(f'{OUT}/SAR_BOQ_Cost_Mapping.xlsx')
+wb.save(f'{OUT}/0580_BOQ_Cost_Mapping.xlsx')
 print('xlsx saved; mapping rows', last_map - 4, 'S-curve months', n)
