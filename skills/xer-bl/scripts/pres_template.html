@@ -47,6 +47,7 @@ table.tb tr.r{cursor:pointer}table.tb tr.r:hover td{background:#FFF4D6}
 .gr .grip{display:inline-block;cursor:grab;color:var(--slate);margin-right:5px;font-weight:700;letter-spacing:-2px;touch-action:none;user-select:none}.gr .grip:hover{color:var(--blue)}
 body.dgg,body.dgg *{cursor:grabbing!important;user-select:none!important}
 .gr.dov{box-shadow:inset 0 3px 0 var(--yellow)}.gr.dsrc{opacity:.45}
+.dgtip{position:absolute;z-index:9;background:#3D3935;color:#fff;font-size:12px;font-weight:700;padding:3px 8px;border-radius:3px;white-space:nowrap;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.35)}
 .gb.dmv{box-shadow:0 3px 10px rgba(0,0,0,.35);z-index:5}
 #scn{background:#FFF4D6;border:1px solid #F1B434;padding:2px 8px;gap:8px}
 /* bottom bar */
@@ -197,13 +198,13 @@ function bindDrag(host,after){
   const rows=$$('.gr[data-drag]',host);if(!rows.length)return;const g=host._g;
   rows.forEach(row=>{const code=row.dataset.drag,gt=$('.gt',row);
     const down=(ev,mode)=>{ev.preventDefault();ev.stopPropagation();const x0=ev.clientX,y0=ev.clientY,W=gt.clientWidth,spanD=(g.t1-g.t0)/864e5;const bars=[...$$('.gb,.gbo,.gd',gt)];const st0=ST[stIdx(code)];const dur0=Math.max(1,daysBetween(st0.start,st0.end));
-      const bs=[...$$('.gb',gt)].map(b=>({b,w:b.offsetWidth}));let moved=false,days=0,k=1;document.body.classList.add('dgg');
+      const bs=[...$$('.gb',gt)].map(b=>({b,w:b.offsetWidth,t:b.textContent}));const lab=bs.slice().sort((x,y)=>y.w-x.w)[0];const tip=document.createElement('span');tip.className='dgtip';gt.appendChild(tip);const sh=(ns,ne)=>{if(lab){tip.textContent=fD(ns)+'  \u2192  '+fD(ne)+'  \u00b7  '+(daysBetween(ns,ne)/30.4375).toFixed(1)+' months';const L=lab.b.offsetLeft+(mode==='h'?days/spanD*W:0);tip.style.left=Math.max(0,Math.min(L,W-tip.offsetWidth))+'px';tip.style.top=(lab.b.offsetTop-24)+'px';}};let moved=false,days=0,k=1;document.body.classList.add('dgg');
       const mv=e=>{let dx=e.clientX-x0,dy=e.clientY-y0;if(window.__rot){const t=dx;dx=dy;dy=-t;}if(Math.abs(dx)+Math.abs(dy)>3)moved=true;
-        if(mode==='h'){days=Math.round(dx/W*spanD);bars.forEach(b=>b.style.transform='translateX('+(days/spanD*W)+'px)');bars.forEach(b=>b.classList.add('dmv'));}
-        else if(mode==='r'){const nd=Math.max(Math.round(dur0*.3),dur0+Math.round(dx/W*spanD));k=nd/dur0;bs.forEach(o=>o.b.style.width=Math.max(4,o.w*k)+'px');}
+        if(mode==='h'){days=Math.round(dx/W*spanD);bars.forEach(b=>b.style.transform='translateX('+(days/spanD*W)+'px)');bars.forEach(b=>b.classList.add('dmv'));sh(isoD(snapWD(new Date(dd(st0.start).getTime()+days*864e5))),isoD(snapWD(new Date(dd(st0.end).getTime()+days*864e5))));}
+        else if(mode==='r'){const nd=Math.max(Math.round(dur0*.3),dur0+Math.round(dx/W*spanD));k=nd/dur0;bs.forEach(o=>o.b.style.width=Math.max(4,o.w*k)+'px');sh(st0.start,isoD(snapWD(new Date(dd(st0.start).getTime()+nd*864e5))));}
         else{const over=document.elementFromPoint(e.clientX,e.clientY);const tr=over&&over.closest&&over.closest('.gr[data-drag]');$$('.gr.dov',host).forEach(x=>x.classList.remove('dov'));row.classList.add('dsrc');if(tr&&tr!==row&&tr.dataset.par===row.dataset.par)tr.classList.add('dov');}};
-      const up=e=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);document.body.classList.remove('dgg');window.__dgT=Date.now();
-        if(!moved){bars.forEach(b=>{b.style.transform='';b.classList.remove('dmv');});row.classList.remove('dsrc');return;}
+      const up=e=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);document.body.classList.remove('dgg');window.__dgT=Date.now();tip.remove();
+        if(!moved){bars.forEach(b=>{b.style.transform='';b.classList.remove('dmv');});tip.remove();row.classList.remove('dsrc');return;}
         const o=OV[code]||(OV[code]={shift:0,k:1});
         if(mode==='h')o.shift+=days;else if(mode==='r')o.k=Math.max(.3,Math.min(3,o.k*k));
         else{const over=document.elementFromPoint(e.clientX,e.clientY);const tr=over&&over.closest&&over.closest('.gr[data-drag]');
