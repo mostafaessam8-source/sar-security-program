@@ -191,25 +191,6 @@ slide('scope1',el=>{
   $$('[data-l]',el).forEach(b=>b.onclick=()=>{const l=b.dataset.l,ss=ST.filter(s=>s.line===l);drawer(({NSR:'North South Railway',EWR:'East West Railway',HHR:'Haramain High Speed Rail'})[l],ss.length+' stations · SAR '+fM(DATA.line_val[l])+'M · '+fN(M.camLine[l])+' cameras',tbl(['Station','Value (SAR M)','Cameras','Accepted'],ss.map(s=>`<tr class="rc" data-st="${s.code}"><td>${esc(s.name)}${star(s)}</td><td>${fM(s.val)}</td><td>${fN(s.cams)}</td><td>${fD(s.end)}</td></tr>`)));});
   $$('[data-x]',el).forEach(b=>b.onclick=()=>b.dataset.x==='price'?priceDrawer():termsDrawer());
 });
-/* ===== 5 plan highlights ===== */
-slide('high',el=>{
-  const dStart=ABY['NRY-E1030'].s,dEnd=ABY['PRJ-M1250'].f,enS=ABY['NRY-X1010'].s;
-  let h=chrome('Plan highlights',3,'Plan highlights','Click a card to see it in the schedule');
-  const kp=[['M1 - M2','Mobilization and site survey',fD(M.ntp)+' to '+fD(DATA.key.m1150),'six'],['M3 - M6','Design (four months)',fD(dStart)+' to '+fD(dEnd),'six'],['M5 - M6','Overlap: enabling works','start '+fD(enS)+', design still running','ena'],['21 days','SAR review per submission','15 working days in a Sun-Thu week','rev']];
-  const kw=(11.75-.75)/4;kp.forEach((k,i)=>{const x=.85+i*(kw+.25);h+=E(x,1.85,kw,.95,'','kp clk','','data-v="'+k[3]+'"')+T(x+.18,1.87,kw-.3,.42,k[0],20,{b:1,c:C.blue,vm:1,st:'pointer-events:none'})+T(x+.18,2.28,kw-.3,.24,k[1],11,{b:1,st:'pointer-events:none'})+T(x+.18,2.5,kw-.3,.24,k[2],9,{c:C.slate,st:'pointer-events:none'});});
-  const p1=ST.filter(s=>s.prio===1),p2=ST.filter(s=>s.prio===2);
-  h+=lbl('Execution priority',.85,3.0)+E(.85,3.3,5.7,3.5,'','card t5','border-left:6px solid '+C.red)+T(1.05,3.35,5.4,.28,'Priority 1: Makkah and Riyadh (Thumamah)',12,{b:1,c:C.blue})+T(1.05,3.65,5.4,.7,'Survey first, four months of design, enabling works from month 5 in parallel with design.',11,{lh:1.15});
-  p1.forEach((s,i)=>{h+=E(1.05,4.45+i*.5,5.3,.44,'','card clk','','data-st="'+s.code+'"')+T(1.15,4.45+i*.5,5.1,.44,`<b>${esc(s.name)}</b> <span style="color:${C.slate};font-size:11.5px">SAR ${fM(s.val)}M · accepted ${fD(s.end)}</span>`,11,{vm:1,st:'pointer-events:none'});});
-  h+=T(1.05,5.5,5.4,.28,'Priority 2: Riyadh (Malaz)',12,{b:1,c:C.blue})+T(1.05,5.78,5.4,.5,'Surveyed in the same two months; works follow the engineering approval.',11,{lh:1.15});
-  p2.forEach(s=>{h+=E(1.05,6.3,5.3,.4,'','card clk','','data-st="'+s.code+'"')+T(1.15,6.3,5.1,.4,`<b>${esc(s.name)}</b> <span style="color:${C.slate};font-size:11.5px">SAR ${fM(s.val)}M · accepted ${fD(s.end)}</span>`,11,{vm:1,st:'pointer-events:none'});});
-  h+=lbl('Proof of concept: Riyadh (Thumamah)',6.8,3.0,5.8)+E(6.8,3.3,5.8,1.0,'','card')+T(6.95,3.35,5.5,.9,'Proves <b>CCTV</b>, <b>inspection and access control</b> and the <b>network</b> on site before manufacture. The consultant has <b>one month</b> for inspection and approval.',11,{lh:1.2});
-  const kq=[[fD(ABY['NRY-POC4100'].s),'POC approved','before MS3','poc'],['22 days','consultant review','10 inspection + 12 approval','poc'],['21 days','SAR review','plan and report','rev']];
-  const kw3=(5.8-.4)/3;kq.forEach((k,i)=>{const x=6.8+i*(kw3+.2);h+=E(x,4.5,kw3,.95,'','kp clk','','data-v="'+k[3]+'"')+T(x+.12,4.52,kw3-.2,.36,k[0],14,{b:1,c:C.blue,vm:1,st:'pointer-events:none'})+T(x+.12,4.9,kw3-.2,.24,k[1],10,{b:1,st:'pointer-events:none'})+T(x+.12,5.12,kw3-.2,.24,k[2],8.5,{c:C.slate,st:'pointer-events:none'});});
-  h+=E(6.8,5.75,2.8,.5,'Open the full schedule &#9654;','clk vm','justify-content:center;background:'+C.blue+';color:#fff;font-weight:700;font-size:15px','data-v="full"')+E(9.8,5.75,2.8,.5,'Other stations (waves)','clk vm','justify-content:center;border:1.5px solid '+C.blue+';color:'+C.blue+';font-weight:700;font-size:14px','data-v="oth"');
-  el.innerHTML=h;
-  $$('[data-v]',el).forEach(b=>b.onclick=()=>openSched(b.dataset.v));
-  $$('[data-st]',el).forEach(b=>b.onclick=()=>openStation(b.dataset.st));
-});
 /* ===== 6 the full schedule (one page) ===== */
 const EPCN={ENG:'Engineering',PRO:'Procurement',CON:'Construction',COM:'Commissioning and handover',PMG:'Project management',MS:'Milestones'};
 const RESPN=['ETECHS','SAR','SAR/HCIS','Vendor'];
@@ -240,7 +221,7 @@ function passAct(a){const F=SCH.F;const s=a.stn==='PRJ'?null:SBY[a.stn];
 const PKG={P1:['Priority 1: Makkah + Thumamah',0],P2:['Priority 2: Riyadh (Malaz)',1],NSR:['NSR: North South Railway',2],EWR:['EWR: East West Railway',3],HHR:['HHR: Haramain High Speed Rail',4]};
 const pkgOf=s=>s.prio===1?'P1':s.prio===2?'P2':s.line;
 const WRANK={'0580':0,PM:1,ENG:2,PRO:3,CON:4,COM:5},EPO={PMG:0,ENG:1,PRO:2,CON:3,COM:4,MS:5};
-const GRP={E1010:['Site survey',1],E1020:['Site survey',1],E1030:['Concept design',2],E1040:['Concept design',2],E1050:['Preliminary design',3],E1060:['Preliminary design',3],E1070:['Detailed design',4],E1080:['Detailed design',4],E1090:['IFC drawings',5],E1100:['IFC drawings',5],E1110:['HCIS documents',6],E1120:['HCIS documents',6],E1130:['As-built documents',8],E1140:['As-built documents',8],
+const GRP={E1010:['Site survey',1],E1020:['Site survey',1],E1030:['Concept design',2],E1040:['Concept approval (SAR, 21 days)',2.5],E1050:['Preliminary design',3],E1060:['Preliminary design',3],E1070:['Detailed design',4],E1080:['Detailed design',4],E1090:['IFC drawings',5],E1100:['IFC drawings',5],E1110:['HCIS documents',6],E1120:['HCIS documents',6],E1130:['As-built documents',8],E1140:['As-built documents',8],
  P1010:['Manufacture',1],P1020:['Manufacture',1],P1030:['Manufacture',1],P1040:['Manufacture',1],P1050:['FAT, shipping and delivery',2],P1060:['FAT, shipping and delivery',2],P1070:['FAT, shipping and delivery',2],
  X1010:['Enabling works',1],X1020:['Enabling works',1],C1010:['Civil works',2],C1020:['Civil works',2],C2010:['Installation',3],C2020:['Installation',3],C2030:['Installation',3],C2040:['Installation',3],C2050:['Installation',3],
  T1010:['Testing and commissioning (SAT)',1],T1020:['Testing and commissioning (SAT)',1],T2010:['Training and trial operation',2],T2020:['Training and trial operation',2],T3010:['Handover and acceptance',3],
@@ -266,7 +247,7 @@ function popMulti(host,btn,title,opts,set,all,onchange){const old=$('.pop',host)
   p.querySelectorAll('input').forEach(i=>i.onchange=()=>{const v=isNaN(+i.value)||i.value===''?i.value:(typeof opts[0][0]==='number'?+i.value:i.value);if(i.checked)set.add(v);else set.delete(v);if(!set.size){set.add(v);i.checked=true;}onchange();});
   p.querySelectorAll('[data-a]').forEach(a=>a.onclick=()=>{set.clear();if(a.dataset.a==='all')all.forEach(x=>set.add(x));else set.add(all[0]);p.querySelectorAll('input').forEach(i=>{const v=typeof opts[0][0]==='number'?+i.value:i.value;i.checked=set.has(v);});onchange();});}
 slide('sched',el=>{
-  const F=SCH.F;let h=chrome('Schedule',4,'Schedule: priority stations first, last station accepted at M36','');
+  const F=SCH.F;let h=chrome('Schedule',3,'Schedule: priority stations first, last station accepted at M36','');
   h+=E(.85,1.45,11.75,5.45,'<div id="tb"></div><div class="scr" id="sc" style="flex:1;min-height:0;margin-top:6px;border:1px solid '+C.gray+'"></div>','','z-index:30;display:flex;flex-direction:column');
   el.innerHTML=h;
   const tb=$('#tb',el);
@@ -351,7 +332,7 @@ SL.find(s=>s.id==='sched').always=true;
 /* ===== 10 cash flow (original layout) ===== */
 slide('cash',el=>{
   const bl=invByMonthLine();const monthly=Array(36).fill(0);Object.values(DATA.inv_m).forEach(v=>v.forEach((x,i)=>monthly[i]+=x));let c0=0;const cum=monthly.map(v=>c0+=v);const peak=Math.max(...monthly);
-  let h=chrome('Cash flow',5,'Cash flow: SAR '+(M.po/1e6).toFixed(1)+'M invoiced on seven contract milestones','Amount to be invoiced in each month from Notice to Proceed (assumed '+fD(M.ntp)+'), SAR million excluding VAT');
+  let h=chrome('Cash flow',4,'Cash flow: SAR '+(M.po/1e6).toFixed(1)+'M invoiced on seven contract milestones','Amount to be invoiced in each month from Notice to Proceed (assumed '+fD(M.ntp)+'), SAR million excluding VAT');
   let t=`<table class="tb" style="font-size:14.7px"><colgroup><col style="width:${1.75*IN}px">${Array(12).fill(`<col style="width:${.8333*IN}px">`).join('')}</colgroup><tbody>`;
   for(let b=0;b<3;b++){t+=`<tr style="height:${.4*IN}px">${'<th style="text-align:left;font-size:13.3px">Month</th>'}${Array.from({length:12},(_,k)=>{const m=b*12+k;return `<th style="text-align:center;line-height:1.1;font-size:13.3px;cursor:pointer" data-m="${m}">M${m+1}<br><span style="font-weight:400;font-size:12px">${mLab(m)}</span></th>`;}).join('')}</tr>`;
     t+=`<tr style="height:${.3*IN}px"><td style="background:${C.t10};font-weight:700;font-size:13.3px">Invoiced in month</td>${Array.from({length:12},(_,k)=>{const m=b*12+k,v=monthly[m]/1e6,pk=monthly[m]===peak;return `<td data-m="${m}" style="text-align:center;cursor:pointer;background:${C.t10};font-weight:${pk||v>=4?700:400};color:${pk?C.red:C.black}">${v<.005?'-':v.toFixed(2)}</td>`;}).join('')}</tr>`;
@@ -371,7 +352,7 @@ slide('cash',el=>{
 /* ===== 11 dashboard ===== */
 slide('dash',el=>{
   const lines=new Set(['NSR','EWR','HHR']),pr=new Set([1,2,0]);let mo=12;
-  let h=chrome('Dashboard',6,'Dashboard: progress, invoices and stations','Choose railways and priorities, then move the month to see the planned position');
+  let h=chrome('Dashboard',5,'Dashboard: progress, invoices and stations','Choose railways and priorities, then move the month to see the planned position');
   h+=E(.85,1.8,5.6,.4,['NSR','EWR','HHR'].map(l=>`<button class="chip on" data-l="${l}" style="border-left:6px solid ${LC[l]}">${l}</button>`).join(' ')+' '+[[1,'Priority 1'],[2,'Priority 2'],[0,'Other stations']].map(([k,t])=>`<button class="chip on" data-p="${k}">${t}</button>`).join(' '),'vm','gap:4px;flex-wrap:nowrap')+
    E(6.6,1.8,6.0,.45,'<div style="width:100%"><b id="dmo" style="font-size:13.3px"></b><input type="range" id="dsl" min="0" max="36" value="12" style="width:100%;display:block"></div>');
   h+=E(.85,2.35,11.75,.85,'<div id="dk" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;height:100%"></div>');
