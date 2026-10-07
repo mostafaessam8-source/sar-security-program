@@ -325,13 +325,13 @@ slide('sched',el=>{
   function drawPay(sc){const sel=new Set(selStations().map(s=>s.code));const ev=DATA.events.filter(e=>e.c==='PRJ'?SCH.F.lines.has('PRJ'):sel.has(e.c)).sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0);const tot=ev.reduce((a,e)=>a+e.a,0);
     const P=SCH.pay||(SCH.pay={all:false,open:new Set()});const isO=k=>P.all||P.open.has(k);
     const mo=new Map();ev.forEach(e=>{const k=e.d.slice(0,7);if(!mo.has(k))mo.set(k,{k,d:e.d,a:0,n:0,ms:new Map()});const m=mo.get(k);m.a+=e.a;m.n++;if(!m.ms.has(e.ms))m.ms.set(e.ms,{a:0,n:0,l:[]});const g=m.ms.get(e.ms);g.a+=e.a;g.n++;g.l.push(e);});
-    let cum=0,rows=[];
-    mo.forEach(m=>{cum+=m.a;const mk='m|'+m.k,op=isO(mk);
-      rows.push(`<tr data-t="${mk}" style="background:${C.t10};font-weight:700;color:${C.blue};cursor:pointer"><td colspan="3" style="text-align:left">${op?'▾':'▸'} M${monIdx(m.d)+1} · ${fD(m.d).slice(3)} · ${m.n} invoice${m.n>1?'s':''}</td><td>${fN(m.a)}</td><td>${fN(cum)}</td></tr>`);
+    let cum=0,rows=[],inv=0;
+    mo.forEach(m=>{cum+=m.a;inv++;const mk='m|'+m.k,op=isO(mk);
+      rows.push(`<tr data-t="${mk}" style="background:${C.t10};font-weight:700;color:${C.blue};cursor:pointer"><td colspan="3" style="text-align:left">${op?'▾':'▸'} Invoice ${inv} · M${monIdx(m.d)+1} · ${fD(m.d).slice(3)} · ${m.n} milestone item${m.n>1?'s':''}</td><td>${fN(m.a)}</td><td>${fN(cum)}</td></tr>`);
       if(op)m.ms.forEach((g,ms)=>{const gk='g|'+m.k+'|'+ms,go2=isO(gk);
-        rows.push(`<tr data-t="${gk}" style="font-weight:700;cursor:pointer;background:#F5F8F9"><td></td><td colspan="2" style="text-align:left">${go2?'▾':'▸'} ${ms} ${DATA.ms_def[ms].n} · ${g.n} invoice${g.n>1?'s':''}</td><td>${fN(g.a)}</td><td></td></tr>`);
+        rows.push(`<tr data-t="${gk}" style="font-weight:700;cursor:pointer;background:#F5F8F9"><td></td><td colspan="2" style="text-align:left">${go2?'▾':'▸'} ${ms} ${DATA.ms_def[ms].n} · ${g.n} station${g.n>1?'s':''}</td><td>${fN(g.a)}</td><td></td></tr>`);
         if(go2)g.l.forEach(e=>rows.push(`<tr class="rc" data-e="${e.c}|${e.ms}"><td>${fD(e.d)}</td><td style="text-align:left;padding-left:22px">${e.ms}</td><td style="text-align:left">${e.c==='PRJ'?'All stations':esc(SBY[e.c].name)}</td><td>${fN(e.a)}</td><td></td></tr>`));});});
-    sc.innerHTML=`<div style="padding:8px"><p class="dn" style="margin:0 0 6px">Each payment milestone is invoiced when its milestone activity is achieved (clause 15). ${ev.length} invoices, SAR ${fN(tot)}. Click a month or milestone to expand it; click an invoice for the milestone activity.</p>${tbl(['Date','Milestone','Station','Invoice (SAR)','Cumulative (SAR)'],rows.concat([`<tr class="tot"><td>Total</td><td></td><td></td><td>${fN(tot)}</td><td></td></tr>`]))}</div>`;
+    sc.innerHTML=`<div style="padding:8px"><p class="dn" style="margin:0 0 6px">Payment milestones achieved during a month (clause 15) are invoiced together in one invoice at month end. One invoice per month: ${mo.size} monthly invoices, SAR ${fN(tot)}. Click a month or milestone to expand it; click a line for the milestone activity.</p>${tbl(['Date','Milestone','Station','Invoice (SAR)','Cumulative (SAR)'],rows.concat([`<tr class="tot"><td>Total</td><td></td><td></td><td>${fN(tot)}</td><td></td></tr>`]))}</div>`;
     $$('tr[data-t]',sc).forEach(r=>r.onclick=()=>{const k=r.dataset.t;if(P.all){P.all=false;P.open=new Set();}P.open.has(k)?P.open.delete(k):P.open.add(k);drawPay(sc);});
     const SUF={MS2:'E1200',MS3:'E1210',MS4:'P1100',MS5:'C2100',MS6:'T1100',MS7:'T3100'};
     $$('tr[data-e]',sc).forEach(r=>{r.onclick=()=>{const[c,ms]=r.dataset.e.split('|');const a=c==='PRJ'?ABY['PRJ-M1100']:ABY[c+'-'+SUF[ms]];actDrawer(a);};});}
