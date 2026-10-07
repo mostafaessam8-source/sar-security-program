@@ -24,6 +24,7 @@ def build(k_stretch=1.0, buffer_days=20):
     prj('PRJ-A1030', 'SAR review and approval of initial baseline', pm, 15, [('PRJ-A1020', 'FS', 0)], RESP='SAR', SUBAPP='Approval', MST='MS1', EPC='MOB')
     prj('PRJ-A1040', 'Mobilization: site establishment, offices, personnel and tools', pm, 25, [('PRJ-M0000', 'FS', 5)], MST='MS1', EPC='MOB')
     prj('PRJ-A1050', 'Mobilization submittals: QC programme and ITP, HSE, security, procurement and shipping plan', pm, 20, [('PRJ-M0000', 'FS', 5)], SUBAPP='Submittal', MST='MS1', EPC='MOB')
+    prj('PRJ-A1060', 'Site access permits for the surveys of all stations: application and approval (two months)', pm, 45, [('PRJ-M0000', 'FS', 0)], RESP='SAR', SUBAPP='Approval', EPC='MOB')
     prj('PRJ-M1100', 'MS1 Mobilization complete (payment milestone 20%)', 'PM.MST', 0, [('PRJ-A1010', 'FS', 0), ('PRJ-A1030', 'FS', 0), ('PRJ-A1040', 'FS', 0), ('PRJ-A1050', 'FS', 0)], 'TT_FinMile', EPC='MS', MST='MS1', RESP='SAR')
     prj('PRJ-M1150', 'Mobilization and survey permits complete (end of month 2)', 'PM.MST', 0, [('PRJ-M1100', 'FS', 0), ('PRJ-M0000', 'FS', M2_IDX + 1)], 'TT_FinMile', EPC='MS', RESP='ETECHS')
     prj('PRJ-A2010', 'Detailed baseline programme (within 21 days after survey)', pm, 15, [], SUBAPP='Submittal')
@@ -35,7 +36,7 @@ def build(k_stretch=1.0, buffer_days=20):
 
     # cost / progress keys for project level
     MOB_KEY = {'PRJ-A1010': 15, 'PRJ-A1020': 10, 'PRJ-A1040': 45, 'PRJ-A1050': 30}
-    PRJ_PROG = {'PRJ-A1010': 0.4, 'PRJ-A1020': 0.2, 'PRJ-A1030': 0.2, 'PRJ-A1040': 0.8, 'PRJ-A1050': 0.6, 'PRJ-A2010': 0.3, 'PRJ-A2020': 0.2, 'PRJ-C1010': 1.3}
+    PRJ_PROG = {'PRJ-A1010': 0.4, 'PRJ-A1020': 0.2, 'PRJ-A1030': 0.2, 'PRJ-A1040': 0.7, 'PRJ-A1050': 0.6, 'PRJ-A1060': 0.1, 'PRJ-A2010': 0.3, 'PRJ-A2020': 0.2, 'PRJ-C1010': 1.3}
     for c, w in MOB_KEY.items():
         ACTS[c].cost_ms = ('MS1', w / 100.0); ACTS[c].basis = f'MS1 Mobilization 20% of the total price (SAR {0.20*PO:,.0f}) x key {w}%'
         ACTS[c].boq = 'Contract price (62,000,000) x 20% mobilization payment (contract clause 15)'
@@ -69,9 +70,7 @@ def build(k_stretch=1.0, buffer_days=20):
             return a
         c1 = rnd(0.15 * E); p1 = rnd(0.25 * E); d1 = rnd(0.40 * E); i1 = E - (c1 + p1 + d1); L = rnd(0.15 * E); h1 = E - (c1 + p1 + L)
         ENGK = dict(EPC='ENG', DISC='DOCS')
-        wbs(f'PM.MOB.{c}', f'Survey access permit - {name}', 'PM.MOB')
-        A('E1005', 'Mobilization: site access permit for the survey - application and approval (two months)', f'PM.MOB.{c}', 45, [], EPC='MOB', DISC='PM', RESP='SAR', STAGE='Survey', SUBAPP='Approval')
-        A('E1010', 'Survey: submittal of site survey and as-found report', f'{eng}.SRV.SUB', p['sv'], [('E1005', 'FS', 0)] + ([('PRJ-M1150', 'FS', 0)] if prio else []), RESP='ETECHS', STAGE='Survey', SUBAPP='Submittal', **ENGK)
+        A('E1010', 'Survey: submittal of site survey and as-found report', f'{eng}.SRV.SUB', p['sv'], [('PRJ-A1060', 'FS', 0)] + ([('PRJ-M1150', 'FS', 0)] if prio else [('PRJ-M2100', 'FS', ('WAVE', sid))]), RESP='ETECHS', STAGE='Survey', SUBAPP='Submittal', **ENGK)
         A('E1020', 'Survey: SAR approval of survey report', f'{eng}.SRV.APR', p['appr'], [('E1010', 'FS', 0)], RESP='SAR', STAGE='Survey', SUBAPP='Approval', **ENGK)
         A('E1030', 'Concept design: submittal', f'{eng}.CNC.SUB', c1, [('E1010', 'FS', 0)], RESP='ETECHS', STAGE='Concept', SUBAPP='Submittal', **ENGK)
         A('E1040', 'Concept design: SAR review and approval', f'{eng}.CNC.APR', p['appr'], [('E1030', 'FS', 0)], RESP='SAR', STAGE='Concept', SUBAPP='Approval', **ENGK)
@@ -162,7 +161,7 @@ def build(k_stretch=1.0, buffer_days=20):
         poc_apr = {'POC1020': 4, 'POC4010': 5, 'POC4020': 6}                                                  # % of the MS3 bucket (15%)
         dsc, asc = (0.83, 0.85) if sid == 'NSR-RYD' else (0.98, 1.0)
         design_key = {k_: v_ * dsc for k_, v_ in design_key.items()}; appr_key = {k_: v_ * asc for k_, v_ in appr_key.items()}
-        design_key['E1005'] = 2.0   # permit processing, % of the MS2 bucket (no separate Annex 3 item)
+        design_key['E1010'] += 2.0   # survey incl. permit follow-up, % of the MS2 bucket
         KEYS = []
         if sid == 'NSR-RYD':
             for n, w in poc_sub.items(): KEYS.append((n, 'MS2', w / 100.0, f'POC key {w}% of the engineering-submittal milestone (no separate POC item in Annex 3; carved from the design and engineering package)', 'Annex 3 Design and engineering package (railway) allocated by station hardware share'))
@@ -195,7 +194,6 @@ def build(k_stretch=1.0, buffer_days=20):
         stn_pct = 96.0 * f
         E_stage = {'SRV': (8, 'E1010', 'E1020'), 'CNC': (10, 'E1030', 'E1040'), 'PRE': (18, 'E1050', 'E1060'), 'DET': (30, 'E1070', 'E1080'), 'IFC': (18, 'E1090', 'E1100'), 'HCS': (6, 'E1110', 'E1120'), 'ASB': (10, 'E1130', 'E1140')}
         e_scale = (0.90 if sid == 'NSR-RYD' else 1.0) * 0.98
-        ACTS[f'{c}-E1005'].prog = stn_pct * 12.0 * 0.02 / 100.0
         if sid == 'NSR-RYD':
             pocs = [f'{c}-{n}' for n in ('POC1010', 'POC1020', 'POC2010', 'POC2020', 'POC2030', 'POC3010', 'POC3020', 'POC4010', 'POC4020')]
             pd_ = sum(ACTS[x].dur for x in pocs)
@@ -204,19 +202,15 @@ def build(k_stretch=1.0, buffer_days=20):
             tot_w = 12.0 * e_scale * w / 100.0
             ds, da = ACTS[f'{c}-{sub}'].dur, ACTS[f'{c}-{apr}'].dur
             ACTS[f'{c}-{sub}'].prog = stn_pct * tot_w / 100.0 * ds / (ds + da); ACTS[f'{c}-{apr}'].prog = stn_pct * tot_w / 100.0 * da / (ds + da)
+        ACTS[f'{c}-E1010'].prog += stn_pct * 12.0 * 0.02 / 100.0
         for n, share in pk.items(): ACTS[f'{c}-{n}'].prog = stn_pct * 24.0 / 100.0 * share
         for n, w in {'P1050': 4, 'P1060': 8, 'P1070': 4, 'X1010': 1, 'X1020': 1.5, 'C1010': 6.5, 'C1020': 5, 'C2010': 3, 'C2020': 6, 'C2030': 5, 'C2040': 3, 'C2050': 2, 'T1010': 3, 'T1020': (3.5 if sid == 'NSR-RYD' else 4), 'T2010': 2, 'T2020': 3, 'T3010': 3}.items():
             ACTS[f'{c}-{n}'].prog = stn_pct * w / 100.0
         if sid == 'NSR-RYD': ACTS[f'{c}-T1030'].prog = stn_pct * 0.5 / 100.0
-        # wave start link
-        if prio:
-            ACTS[f'{c}-E1005'].preds.append(('PRJ-M0000', 'FS', 0))
-        else:
-            ACTS[f'{c}-E1005'].preds.append(('PRJ-M2100', 'FS', ('WAVE', sid)))
     # detailed baseline after both Riyadh surveys; closeout after all acceptances
     pstn = [s_ for s_ in ST.values() if s_['prio']]
     ACTS['PRJ-A2010'].preds = [(f'{s_["code"]}-E1010', 'FS', 0) for s_ in pstn]
-    ACTS['PRJ-M1150'].preds += [(f'{s_["code"]}-E1005', 'FS', 0) for s_ in pstn]
+    ACTS['PRJ-M1150'].preds += [('PRJ-A1060', 'FS', 0)]
     ACTS['PRJ-M1250'].preds = [(f'{s_["code"]}-{n}', 'FS', 0) for s_ in pstn for n in ('E1100', 'E1120')] + [(f'{ST["NSR-RYD"]["code"]}-POC4100', 'FS', 0)]
     ACTS['PRJ-C1010'].preds = [(a, 'FS', 0) for a in accepted]
     return surveys, accepted

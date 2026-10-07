@@ -31,7 +31,7 @@ def mon(i): return (WORK[i]-START).days/30.4375
 # six-month Gantt for priority stations
 def gantt6():
     rows=[('Mobilization (site, personnel, tools)',['PRJ-A1040'],'#8DB9C2'),
-          ('Survey permit - Riyadh (Thumamah)',['NRY-E1005'],'#00778B'),('Survey permit - Makkah',['HMK-E1005'],'#00778B'),('Survey permit - Riyadh (Malaz)',['ERY-E1005'],'#00778B'),
+          ('Site access permits for surveys (all stations)',['PRJ-A1060'],'#00778B'),
           ('Survey and design - Riyadh (Thumamah)',['NRY-E1010','NRY-E1100'],'#3D3935'),('Survey and design - Makkah',['HMK-E1010','HMK-E1100'],'#3D3935'),
           ('POC - Riyadh (Thumamah)',['NRY-POC1010','NRY-POC4100'],'#E2A400'),
           ('Enabling works - Riyadh (Thumamah)',['NRY-X1010','NRY-X1020'],'#C8C9C7'),('Enabling works - Makkah',['HMK-X1010','HMK-X1020'],'#C8C9C7')]
@@ -90,17 +90,17 @@ table([(c,ACTS[c].name,D(ES[c] if ACTS[c].typ=='TT_Mile' else EF[c])) for c in m
 P('Contract completion is driven by logic: it is linked from NTP with a lag equal to the 36 month term and carries no date constraint. If the NTP date changes, every date moves with it.')
 doc.add_heading('4. The first six months',1)
 doc.add_picture('gantt6.png',width=Cm(16))
-a1,b1=rng(['PRJ-A1010','PRJ-A1020','PRJ-A1030','PRJ-A1040','PRJ-A1050','NRY-E1005','HMK-E1005','ERY-E1005'])
+a1,b1=rng(['PRJ-A1010','PRJ-A1020','PRJ-A1030','PRJ-A1040','PRJ-A1050','PRJ-A1060'])
 a2,b2=rng(['NRY-E1010','NRY-E1100','HMK-E1010','HMK-E1100']); a3,b3=rng(['NRY-X1010','NRY-X1020','HMK-X1010','HMK-X1020'])
-table([('Mobilization and survey permit (months 1-2)',D(a1),D(b1),'Mobilization, initial baseline, and the two month site access permit for the survey at Riyadh (Thumamah), Makkah and Riyadh (Malaz)'),
+table([('Mobilization and survey permit (months 1-2)',D(a1),D(b1),'Mobilization, initial baseline, and the two month site access permit for the surveys, applied for once for the whole project'),
        ('Design including survey (months 3-6)',D(a2),D(b2),'Site survey, concept, preliminary, detailed and IFC design with HCIS documents; each stage submitted and approved in 21 days'),
        ('Enabling works start (month 5)',D(a3),D(b3),'Site preparation, setting out, temporary works, cable routes, duct banks and plinths, in parallel with the last two months of design'),
        ],['Phase','Start','Finish','Content'],[4.5,2.6,2.6,6.3])
-P('The survey needs a site access permit and the permit takes two months, so months 1 and 2 are mobilization and the permit (activity E1005 at each station, held in the Mobilization branch of the WBS). The survey is the first part of design, so design starts when the permit is granted and lasts four months in total, survey included. At the priority stations the two month window is held by milestone PRJ-M1150; at the other stations design starts when their own permit ends. Enabling works start two months before the end of design, so design and execution overlap by two months. No date constraint is used.')
+P('The survey needs a site access permit and the permit takes two months, so months 1 and 2 are mobilization and the permit (one project-level activity, PRJ-A1060, in the Mobilization branch of the WBS; there is no permit activity per station). The survey is the first part of design, so the survey and design start when the permit is granted and lasts four months in total, survey included. At the priority stations the two month window is held by milestone PRJ-M1150; the other stations start design in their wave, with the permit already in hand. Enabling works start two months before the end of design, so design and execution overlap by two months. No date constraint is used.')
 doc.add_heading('5. Priority stations',1)
 P('Priority 1: Makkah (Haramain) and Riyadh (Thumamah, North South Railway). Their permits are applied for first and their enabling and civil works run in parallel with design. Equipment is manufactured only after SAR approval of the engineering (milestone MS3), so no equipment is ordered before approval. Priority 2: Riyadh (Malaz, East West Railway), permitted in the same two months. The remaining stations follow in waves after the detailed baseline is approved, each with the same four month design.')
-pr=[(s['name'],s['line'],{1:'Priority 1',2:'Priority 2',0:'Standard'}[s['prio']],D(ES[s['code']+'-E1005']),D(max(EF[c] for c,a in ACTS.items() if a.codes.get('STN')==s['code']))) for s in ST.values()]
-table(pr,['Station','Railway','Priority','Permit start','Station finish'],[5,2,2.5,3.2,3.2])
+pr=[(s['name'],s['line'],{1:'Priority 1',2:'Priority 2',0:'Standard'}[s['prio']],D(ES[s['code']+'-E1010']),D(max(EF[c] for c,a in ACTS.items() if a.codes.get('STN')==s['code']))) for s in ST.values()]
+table(pr,['Station','Railway','Priority','Design start','Station finish'],[5,2,2.5,3.2,3.2])
 doc.add_heading('6. Proof of concept at Riyadh (Thumamah)',1)
 P('The POC covers three systems: CCTV, inspection and access control (Annex 3 section A3), and the network. It sits inside engineering because it validates the design before manufacture. SAR and the consultant approve the POC plan within 21 days, the Contractor builds and tests the POC, and the consultant then inspects and approves it within one month (22 working days: 10 for site inspection and 12 for approval). POC approval is a predecessor of the engineering approval milestone MS3 at this station, so manufacture of its equipment waits for it.')
 pc=[c for c in ACTS if c.startswith('NRY-POC')]

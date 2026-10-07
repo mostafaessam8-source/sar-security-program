@@ -46,7 +46,7 @@ table.tb tr.r{cursor:pointer}table.tb tr.r:hover td{background:#FFF4D6}
 .scr .gantt{overflow:visible}.scr .gh{position:sticky;top:0;z-index:5}
 .gh .gm.q{height:46px}.gh .gm.q span.qc{top:2px;height:20px;padding:0;border-left:1px solid #fff;overflow:visible}.gh .gm.q span.mt{top:28px;height:auto;border:0;padding:0;overflow:visible}
 .gm .qc{position:absolute;top:2px;height:20px;border:1px solid #fff;text-align:center;line-height:18px;font-weight:700;background:var(--t05);color:var(--blue);font-size:12px}.gm .qc.o{background:var(--t10)}.gm .mt{position:absolute;top:27px;transform:translateX(-50%);font-size:11px;font-weight:400;color:var(--slate)}
-.gr.big .gl .n{font-size:15px;font-weight:700;color:var(--black)}.gr.big .gl small{font-size:11px}.gr.big .gb{font-size:12.5px;padding-left:8px}.gr.big.lv0 .gl .n{color:var(--black)}
+.gr.big .gl .n{font-size:15px;font-weight:700;color:var(--black)}.gr.big .gl small{font-size:11px}.gr.big .gb{font-size:12.5px;padding-left:8px}.gr.big.lv0 .gl .n{color:var(--black);white-space:normal;font-size:12.5px;line-height:1.15}
 .gc{padding:3px 6px;text-align:right;white-space:nowrap;display:flex;align-items:center;justify-content:flex-end;border-right:1px solid #EEF1F2;font-size:11px}.gr .gc{color:#4a4a4a}
 .gh{display:flex;background:var(--t10);border-bottom:1px solid var(--gray);font-size:11px;font-weight:700;color:var(--blue)}
 .gh .gl,.gr .gl{flex:0 0 var(--lw,260px);padding:3px 8px;min-width:0}.gh .gm{flex:1;position:relative;height:24px}.gh .gm span{position:absolute;top:0;height:100%;border-left:1px solid #fff;padding:4px 3px;white-space:nowrap;overflow:hidden}
@@ -223,7 +223,7 @@ const PKG={P1:['Priority 1: Makkah + Thumamah',0],P2:['Priority 2: Riyadh (Malaz
 const pkgOf=s=>s.prio===1?'P1':s.prio===2?'P2':s.line;
 const PHN={MOB:'Mobilization and survey permit',DES:'Design (incl. survey)',POC:'Proof of concept',ENA:'Enabling works',PRO:'Procurement and supply',CON:'Construction and installation',COM:'Testing, commissioning and handover',MS:'Milestones'},PHO={MOB:0,DES:1,POC:1.5,ENA:2,PRO:3,CON:4,COM:5,MS:9};
 const WRANK={'0580':0,PM:1,ENG:2,PRO:3,CON:4,COM:5},EPO={PMG:0,ENG:1,PRO:2,CON:3,COM:4,MS:5};
-const GRP={E1005:['Site access permit (2 months)',0],E1010:['Site survey',1],E1020:['Site survey',1],E1030:['Concept design',2],E1040:['Concept design',2],E1050:['Preliminary design',3],E1060:['Preliminary design',3],E1070:['Detailed design',4],E1080:['Detailed design',4],E1090:['IFC drawings',5],E1100:['IFC drawings',5],E1110:['HCIS documents',6],E1120:['HCIS documents',6],E1130:['As-built documents',8],E1140:['As-built documents',8],
+const GRP={E1010:['Site survey',1],E1020:['Site survey',1],E1030:['Concept design',2],E1040:['Concept design',2],E1050:['Preliminary design',3],E1060:['Preliminary design',3],E1070:['Detailed design',4],E1080:['Detailed design',4],E1090:['IFC drawings',5],E1100:['IFC drawings',5],E1110:['HCIS documents',6],E1120:['HCIS documents',6],E1130:['As-built documents',8],E1140:['As-built documents',8],
  P1010:['Manufacture',1],P1020:['Manufacture',1],P1030:['Manufacture',1],P1040:['Manufacture',1],P1050:['FAT, shipping and delivery',2],P1060:['FAT, shipping and delivery',2],P1070:['FAT, shipping and delivery',2],
  X1010:['Enabling works',1],X1020:['Enabling works',1],C1010:['Civil works',2],C1020:['Civil works',2],C2010:['Installation',3],C2020:['Installation',3],C2030:['Installation',3],C2040:['Installation',3],C2050:['Installation',3],
  T1010:['Testing and commissioning (SAT)',1],T1020:['Testing and commissioning (SAT)',1],T1030:['Mock-up approval (site visit, one month)',1.5],T2010:['Training and trial operation',2],T2020:['Training and trial operation',2],T3010:['Handover and acceptance',3],
@@ -232,7 +232,7 @@ function grpOf(a){const suf=a.id.split('-').slice(1).join('-');if(a.t!=='T')retu
 const WBN=Object.fromEntries(DATA.wbs.map(w=>[w.c,w]));
 function buildTree(acts){const nodes=new Map();
   const mk=(id,level,label,sub,ord,parent)=>{let n=nodes.get(id);if(!n){n={id,level,label,sub,ord,kids:[],acts:[],stns:new Set(),segs:new Map(),s:'9999',f:'0000',c:0,p:0,cnt:0,par:parent};nodes.set(id,n);if(parent)parent.kids.push(n);}return n;};
-  const root=mk('0580',1,'Project 0580','',0,null);
+  const root=mk('0580',1,'0580-Security Technology Salutation after eliminating Passenger Checking Roles','',0,null);
   acts.forEach(a=>{let chain=[root];
     if(SCH.group==='wbs'){const cs=[];let c=a.w;while(c){cs.push(c);c=WBN[c].p;}cs.reverse();cs.slice(1).forEach(c=>{const w=WBN[c];chain.push(mk('w:'+c,w.l,esc(w.n),c,(WRANK[c.split('.')[0]]??9)*1000,chain[chain.length-1]));});}
     else{if(a.id==='PRJ-M1250'){const pn=mk('pk:P1',2,PKG.P1[0],'',PKG.P1[1]+1,root);chain.push(pn);}else if(a.stn==='PRJ'){const clo=['PRJ-C1010','PRJ-MX99'].includes(a.id);chain.push(mk(clo?'prjc':'prjm',2,clo?'Closeout, warranty and support':'Mobilization and baseline',clo?'closeout pack and contract completion':'baseline, survey and design milestones',0,root));}
