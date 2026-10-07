@@ -92,6 +92,7 @@ def boq_of(code, a):
     if suf == 'P1060': return 'A1-A5', 'A1 to A5 equipment sections: logistics (shipping, customs, delivery) share'
     if suf == 'P1070': return 'SH-SPR', SH_DESC['SH-SPR']
     if suf in ('T1010', 'T1020'): return 'A1-A5', 'A1 to A5 equipment sections: testing and commissioning share'
+    if suf == 'T1030': return 'A1-A5', 'A1 to A5 equipment sections: mock-up approval share (carved from the testing share)'
     if suf == 'T2010': return 'SH-TRN', SH_DESC['SH-TRN']
     if suf == 'T2020': return 'A1-A5', 'A1 to A5 equipment sections: trial operation share'
     if suf == 'T3010': return 'A1-A5', 'A1 to A5 equipment sections: handover share'
@@ -131,7 +132,7 @@ tmpl = [('MS2', 'Survey, concept, preliminary, detailed, IFC, HCIS submittals', 
         ('MS4', 'FAT / shipping and customs / delivery and receiving', '5 / 15 / 5 %', 'Fixed keys; spares and logistics sit inside delivery'),
         ('MS5', 'Enabling works / civil trenches and duct banks / poles and foundations', '4 + 6 / 50 / 40 % of the A6 share', 'A6 civil works share of station hardware; enabling works carved from the civil line'),
         ('MS5', 'Install cabinets / cabling / CCTV / VMS / access control', '20 / 30 / 25 / 15 / 10 % of (1 - A6 share)', 'Installation is included in the unit prices (Annex 3 works included)'),
-        ('MS6', 'Pre-commissioning / SAT', '40 / 60 %', 'Fixed keys'),
+        ('MS6', 'Pre-commissioning / SAT', '40 / 60 %', 'Fixed keys. Riyadh (Thumamah): 97% of the keys, 3% to the mock-up approval (no separate Annex 3 item)'),
         ('MS7', 'As-built submittal / approval / training / trial operation / handover', '15 / 5 / 15 / 35 / 30 %', 'Fixed keys'),
         ('MS1', 'Performance security / initial baseline / site establishment / mobilization submittals', '15 / 10 / 45 / 30 %', 'Project level, 20% of the total price')]
 for i, t in enumerate(tmpl): put(wk, 4 + i, list(t))

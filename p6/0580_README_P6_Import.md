@@ -12,7 +12,8 @@
 - First six months: months 1-2 mobilization and site survey (milestone PRJ-M1150), months 3-6 design (milestone PRJ-M1250). Enabling works of the priority stations start at the start of month 5, overlapping the last two months of design.
 - Priority 1: Makkah and Riyadh (Thumamah). Priority 2: Riyadh (Malaz). Priority 1 works run in parallel with design.
 - POC at Riyadh (Thumamah): CCTV, inspection and access control, network; one month (22 working days) for consultant inspection and approval. POC approval is a predecessor of MS3 at that station.
-- Every SAR review is 21 days = 15 working days (survey approval was 5 days), except the concept approval at Riyadh (Thumamah) (NRY-E1040) and the POC inspection and approval, which are one month (22 working days).
+- Every SAR review is 21 days = 15 working days (survey approval was 5 days), except the POC inspection and approval and the mock-up approval, which are one month (22 working days).
+- Mock-up approval (NRY-T1030, milestone NRY-T1130): after the installation at Riyadh (Thumamah), SAR visits the site and approves the executed works so the solution can be rolled out to the other stations. It precedes the SAT milestone (MS6) and handover at that station only; it does not hold back the installation of other stations. Cost is carved from 3% of that station's MS6 bucket (no Annex 3 item).
 - WBS: level 1 project, level 2 EPC phase, level 3 station, level 4 design stage or work package, level 5 submittal/approval or area.
 - New activity code type Programme phase (mobilization and survey, design, POC, enabling works, procurement, construction, commissioning).
 - Project number 0580 and the official name on every output.

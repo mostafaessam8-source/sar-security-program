@@ -72,7 +72,7 @@ def build(k_stretch=1.0, buffer_days=20):
         A('E1010', 'Survey: submittal of site survey and as-found report', f'{eng}.SRV.SUB', p['sv'], [], RESP='ETECHS', STAGE='Survey', SUBAPP='Submittal', **ENGK)
         A('E1020', 'Survey: SAR approval of survey report', f'{eng}.SRV.APR', p['appr'], [('E1010', 'FS', 0)], RESP='SAR', STAGE='Survey', SUBAPP='Approval', **ENGK)
         A('E1030', 'Concept design: submittal', f'{eng}.CNC.SUB', c1, ([('E1020', 'FS', 0), ('PRJ-M1150', 'FS', 0)] if prio else [('E1010', 'FS', 0)]), RESP='ETECHS', STAGE='Concept', SUBAPP='Submittal', **ENGK)
-        A('E1040', 'Concept design: SAR review and approval' + (' (one month)' if sid == 'NSR-RYD' else ''), f'{eng}.CNC.APR', 22 if sid == 'NSR-RYD' else p['appr'], [('E1030', 'FS', 0)], RESP='SAR', STAGE='Concept', SUBAPP='Approval', **ENGK)
+        A('E1040', 'Concept design: SAR review and approval', f'{eng}.CNC.APR', p['appr'], [('E1030', 'FS', 0)], RESP='SAR', STAGE='Concept', SUBAPP='Approval', **ENGK)
         A('E1050', 'Preliminary design: submittal', f'{eng}.PRE.SUB', p1, [('E1030', 'FS', 0)], RESP='ETECHS', STAGE='Preliminary', SUBAPP='Submittal', **ENGK)
         A('E1060', 'Preliminary design: SAR review and approval', f'{eng}.PRE.APR', p['appr'], [('E1050', 'FS', 0)], RESP='SAR', STAGE='Preliminary', SUBAPP='Approval', **ENGK)
         A('E1070', 'Detailed design: submittal (drawings, BOQ, data sheets)', f'{eng}.DET.SUB', d1, [('E1050', 'FS', 0)], RESP='ETECHS', STAGE='Detailed', SUBAPP='Submittal', **ENGK)
@@ -141,6 +141,13 @@ def build(k_stretch=1.0, buffer_days=20):
         A('T3010', 'Taking-over application, SAR review and handover', f'{com}.TOA', p['final'], [('T1100', 'FS', 0), ('T2010', 'FS', 0), ('T2020', 'FS', 0), ('E1140', 'FS', 0)], DISC='TC', RESP='SAR', **TK)
         A('T3100', 'MS7 Station accepted - final acceptance and handover (10%)', com, 0, [('T3010', 'FS', 0)], 'TT_FinMile', EPC='MS', DISC='TC', RESP='SAR', STAGE='-', SUBAPP='-', MST='MS7')
         ACTS[f'{c}-T3100'].codes['MST'] = 'MS7'
+        if sid == 'NSR-RYD':
+            # mock-up approval: site visit and SAR approval of the executed works at Riyadh (Thumamah), to be rolled out to the other stations
+            wbs(f'{com}.MOK', 'Mock-up approval', com)
+            tk2 = dict(TK); tk2['SUBAPP'] = 'Approval'
+            A('T1030', 'Mock-up approval: site visit and SAR approval of the executed works (roll-out to other stations)', f'{com}.MOK', 22, [('C2100', 'FS', 0)], DISC='TC', RESP='SAR', **tk2)
+            A('T1130', 'Mock-up approved - roll-out to other stations', com, 0, [('T1030', 'FS', 0)], 'TT_FinMile', EPC='MS', DISC='TC', RESP='SAR', STAGE='-', SUBAPP='-')
+            ACTS[f'{c}-T1100'].preds.append((f'{c}-T1130', 'FS', 0)); ACTS[f'{c}-T3010'].preds.append((f'{c}-T1130', 'FS', 0))
         surveys.append(f'{c}-E1010'); accepted.append(f'{c}-T3100')
         ST[sid]['_c'] = c
         # milestone cost + progress keys
@@ -174,6 +181,9 @@ def build(k_stretch=1.0, buffer_days=20):
                  ('E1130', 'MS7', 0.15, 'Fixed key 15% of final-acceptance milestone', 'Annex 3 documentation and training share'), ('E1140', 'MS7', 0.05, 'Fixed key 5%', 'Annex 3 documentation share'),
                  ('T2010', 'MS7', 0.15, 'Fixed key 15%', 'Annex 3 Training (railway), allocated by hardware share'), ('T2020', 'MS7', 0.35, 'Fixed key 35%', 'Annex 3 equipment sections A1-A5 (trial operation share)'),
                  ('T3010', 'MS7', 0.30, 'Fixed key 30%', 'Annex 3 equipment sections A1-A5 (handover share)')]
+        if sid == 'NSR-RYD':
+            KEYS = [(n_, m_, (w_ * 0.97 if m_ == 'MS6' else w_), b_, q_) for n_, m_, w_, b_, q_ in KEYS]
+            KEYS.append(('T1030', 'MS6', 0.03, 'Mock-up approval key 3% of the SAT milestone (no separate Annex 3 item; carved from the testing share)', 'Annex 3 equipment sections A1-A5 (testing share)'))
         for n, ms, w, basis, boq in KEYS:
             a = ACTS[f'{c}-{n}']; a.cost_ms = (ms, w); a.basis = f'{ms} {MS[ms][0]} {MS[ms][1]*100:.0f}% x station price share {f*100:.2f}% | {basis}'; a.boq = boq
         for ms in ('MS2', 'MS3', 'MS4', 'MS5', 'MS6', 'MS7'):
@@ -191,8 +201,9 @@ def build(k_stretch=1.0, buffer_days=20):
             ds, da = ACTS[f'{c}-{sub}'].dur, ACTS[f'{c}-{apr}'].dur
             ACTS[f'{c}-{sub}'].prog = stn_pct * tot_w / 100.0 * ds / (ds + da); ACTS[f'{c}-{apr}'].prog = stn_pct * tot_w / 100.0 * da / (ds + da)
         for n, share in pk.items(): ACTS[f'{c}-{n}'].prog = stn_pct * 24.0 / 100.0 * share
-        for n, w in {'P1050': 4, 'P1060': 8, 'P1070': 4, 'X1010': 1, 'X1020': 1.5, 'C1010': 6.5, 'C1020': 5, 'C2010': 3, 'C2020': 6, 'C2030': 5, 'C2040': 3, 'C2050': 2, 'T1010': 3, 'T1020': 4, 'T2010': 2, 'T2020': 3, 'T3010': 3}.items():
+        for n, w in {'P1050': 4, 'P1060': 8, 'P1070': 4, 'X1010': 1, 'X1020': 1.5, 'C1010': 6.5, 'C1020': 5, 'C2010': 3, 'C2020': 6, 'C2030': 5, 'C2040': 3, 'C2050': 2, 'T1010': 3, 'T1020': (3.5 if sid == 'NSR-RYD' else 4), 'T2010': 2, 'T2020': 3, 'T3010': 3}.items():
             ACTS[f'{c}-{n}'].prog = stn_pct * w / 100.0
+        if sid == 'NSR-RYD': ACTS[f'{c}-T1030'].prog = stn_pct * 0.5 / 100.0
         # wave start link
         if prio:
             ACTS[f'{c}-E1010'].preds.append(('PRJ-M0000', 'FS', 10 if prio == 2 else 5))
