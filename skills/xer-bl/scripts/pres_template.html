@@ -117,11 +117,11 @@ function gantt(host,o){
   months.forEach((m,i)=>{if(i%step===0){const l=(m-t0)/span*100;if(l>=0&&l<100)h+=`<i class="gvl" style="left:${l}%"></i>`;}});
   (o.bands||[]).forEach(b=>{h+=`<i class="gband" style="left:${pc(b.s)}%;width:${pc(b.f)-pc(b.s)}%;background:${b.c}"></i>`;});
   (o.lines||[]).forEach(b=>{const p=pcr(b.d);if(p>=0&&p<=100)h+=`<i class="gend" style="left:${p}%;border-color:${b.c||C.red}"></i>`;});h+='</div>';
-  o.rows.forEach((r,i)=>{h+=`<div class="gr ${r.lv===0?'lv0':r.lv===1?'lv1':''} ${r.click?'c':''}" data-i="${i}" style="${r.rh?'min-height:'+r.rh+'px':''}"><div class="gl" style="padding-left:${8+(r.ind||0)*12}px"><span class="n" title="${esc(r.label)}">${r.label}</span>${r.sub?`<small>${r.sub}</small>`:''}</div><div class="gt">`;
+  o.rows.forEach((r,i)=>{h+=`<div class="gr ${r.lv===0?'lv0':r.lv===1?'lv1':''} ${r.click||r.lclick?'c':''}" data-i="${i}" style="${r.rh?'min-height:'+r.rh+'px':''}"><div class="gl" style="padding-left:${8+(r.ind||0)*12}px"><span class="n" title="${esc(r.label)}">${r.label}</span>${r.sub?`<small>${r.sub}</small>`:''}</div><div class="gt">`;
     (r.bars||[]).forEach(b=>{const l=pcr(b.s),w=Math.max(.35,pcr(b.f)-l+(100*86400000/span)),cl=Math.max(0,l),cw=Math.min(100,l+w)-cl;if(cw<=0)return;const hh=b.h||12,top=b.top!=null?b.top:Math.round(((r.rh||rh)-hh)/2);
       h+=`<i class="gb ${b.dk?'dk':''}" style="left:${cl}%;width:${cw}%;top:${top}px;height:${hh}px;background:${b.c}" title="${esc(b.t||'')}">${b.l&&cw>6?esc(b.l):''}</i>`;});
     (r.ms||[]).forEach(m=>{const p=pcr(m.d);if(p<0||p>100)return;h+=`<i class="gd ${m.f?'f':''}" style="left:${p}%;top:${Math.round(((r.rh||rh)-12)/2)}px" title="${esc(m.t||'')}"></i>`;});h+='</div></div>';});
-  h+='</div></div>';host.innerHTML=h;if(o.click)$$('.gr.c',host).forEach(e=>e.onclick=()=>o.click(o.rows[+e.dataset.i]));}
+  h+='</div></div>';host.innerHTML=h;if(o.click)$$('.gr.c',host).forEach(e=>e.onclick=ev=>o.click(o.rows[+e.dataset.i],ev));}
 const stationWin=(code,phs)=>{const l=AC.filter(a=>a.stn===code&&a.t==='T'&&phs.includes(a.ph));return l.length?[l.reduce((m,a)=>a.s<m?a.s:m,'9999'),l.reduce((m,a)=>a.f>m?a.f:m,'0000')]:null;};
 /* derived data */
 const lineShare=l=>DATA.line_val[l]/M.po;
@@ -205,29 +205,42 @@ slide('scope3',el=>{
   $$('.card[data-b]',el).forEach(b=>b.onclick=ev=>{if(ev.target.closest('li'))return;const x=B[+b.dataset.b];drawer(x[0],'Source: '+x[2],`<ul style="padding-left:18px">${x[1].map(t=>`<li style="margin:6px 0">${t}</li>`).join('')}</ul><p class="dn">These terms summarise the contract documents; the full text is in the clauses listed above.</p>`);});
   $$('li[data-b]',el).forEach(li=>li.onclick=()=>{const x=B[+li.dataset.b];drawer(x[1][+li.dataset.i],x[0],`<p style="font-size:15px">${x[1][+li.dataset.i]}</p><p class="dn">Source: ${x[2]}</p><p class="dn">Other terms in this group:</p><ul style="padding-left:18px">${x[1].map(t=>`<li>${t}</li>`).join('')}</ul>`);});
 });
-/* ===== 5 first six months ===== */
+/* ===== 5 first six months, by WBS level ===== */
 slide('six',el=>{
   const from=M.ntp,to=addM(M.ntp,8),m3=addM(M.ntp,2),m5=addM(M.ntp,4),m7=addM(M.ntp,6);const dStart=ABY['NRY-E1030'].s,dEnd=ABY['PRJ-M1250'].f,enS=ABY['NRY-X1010'].s;
-  let h=chrome('First six months',5,'The first six months: mobilization and survey, then design','Enabling works start in month 5 and overlap the last two months of design (planning baseline, '+M.rev+')');
+  let h=chrome('First six months',5,'The first six months by WBS level','Level 1 project, level 2 EPC phase, level 3 station, level 4 stage or package, level 5 submittal or approval; click a row to expand it');
   const kp=[['M1 - M2','Mobilization and site survey',fD(M.ntp)+' to '+fD(DATA.key.m1150),'mob'],['M3 - M6','Design (four months)',fD(dStart)+' to '+fD(dEnd),'des'],['M5 - M6','Overlap: enabling works','start '+fD(enS)+', design still running','ena'],['21 days','SAR review per submission','15 working days in a Sun-Thu week','rev']];
   const kw=(11.75-.75)/4;kp.forEach((k,i)=>{const x=.85+i*(kw+.25);h+=E(x,1.85,kw,.95,'','kp clk','','data-k="'+k[3]+'"')+T(x+.18,1.87,kw-.3,.42,k[0],20,{b:1,c:C.blue,vm:1,st:'pointer-events:none'})+T(x+.18,2.28,kw-.3,.24,k[1],11,{b:1,st:'pointer-events:none'})+T(x+.18,2.5,kw-.3,.24,k[2],9,{c:C.slate,st:'pointer-events:none'});});
-  h+=E(.85,2.95,11.75,2.3,'<div id="g6"></div>');
-  h+=E(.85,5.3,11.75,.3,'<div class="leg">'+['MOB','DES','POC','ENA','CON'].map(k=>`<span><i style="background:${PH[k][1]}"></i>${PH[k][0]}</span>`).join('')+'<span>◆ milestone</span><span style="color:#768692">shaded: months 5 and 6, design and enabling works overlap</span></div>');
-  const cds=[['Months 1-2','mobilization and survey','mob'],['Months 3-6','design','des'],['Months 5-6','enabling works overlap','ena']];const cw=(11.75-.4)/3;
-  cds.forEach((c,i)=>{const x=.85+i*(cw+.2);h+=E(x,5.7,cw,1.1,'','card clk '+(i%2?'t5':''),'','data-k="'+c[2]+'"')+T(x+.15,5.76,cw-.3,.28,c[0]+': '+c[1],12,{b:1,c:C.blue,st:'pointer-events:none'})+T(x+.15,6.08,cw-.3,.7,['Mobilization, initial baseline with 21 day SAR review, and the site survey of the priority stations. Click for the activities.','Concept, preliminary, detailed and IFC design with HCIS documents; each stage submitted and approved in 21 days. Click for the activities.','Site preparation, setting out, routes, ducts and plinths start two months before design ends. Click for the activities.'][i],11,{c:C.slate,st:'pointer-events:none;line-height:1.15'});});
+  h+=E(.85,2.9,11.75,.34,'<div style="display:flex;gap:6px;align-items:center;flex-wrap:nowrap;width:100%"><b style="font-size:12.5px;color:'+C.blue+';white-space:nowrap">WBS LEVEL</b>'+[1,2,3,4,5,6].map(n=>`<button class="chip" data-lv="${n}">${n===6?'Activities':'L'+n}</button>`).join('')+'<label style="margin-left:10px;font-size:12.5px;white-space:nowrap"><input type="checkbox" id="onlyp" checked> priority stations only</label><span class="leg" style="margin-left:auto;gap:8px;flex-wrap:nowrap">'+['MOB','DES','POC','ENA','CON'].map(k=>`<span style="white-space:nowrap"><i style="background:${PH[k][1]}"></i>${PH[k][0].replace(/ and .*/,'').replace('Mobilization','Survey').replace('Construction','Civil/install').replace('Proof of concept','POC').replace('Enabling works','Enabling')}</span>`).join('')+'<span style="white-space:nowrap">◆ milestone</span></span></div>');
+  h+=E(.85,3.3,11.75,3.55,'<div class="scr" id="g6" style="height:100%"></div>');
   el.innerHTML=h;
-  const pst=ST.filter(s=>s.prio);const rows=[];
-  const prw=ids=>{const l=ids.map(i=>ABY[i]);return [l.reduce((m,a)=>a.s<m?a.s:m,'9999'),l.reduce((m,a)=>a.f>m?a.f:m,'0000')];};
-  const w1=prw(['PRJ-A1010','PRJ-A1020','PRJ-A1030','PRJ-A1040','PRJ-A1050']),w2=prw(['PRJ-A2010','PRJ-A2020']);
-  rows.push({lv:2,label:'Mobilization and initial baseline',sub:'site, personnel, tools, SAR review 21 days',bars:[{s:w1[0],f:w1[1],c:C.gray,dk:1,h:12}],click:()=>drawer('Mobilization and initial baseline','Project level',actTable(AC.filter(a=>a.stn==='PRJ'&&a.t==='T'&&a.id<'PRJ-A2')))});
-  rows.push({lv:2,label:'Detailed baseline programme',sub:'submittal and SAR review (21 days)',bars:[{s:w2[0],f:w2[1],c:C.slate,h:12}],click:()=>drawer('Detailed baseline programme','Project level',actTable([ABY['PRJ-A2010'],ABY['PRJ-A2020']]))});
-  pst.forEach(s=>{const mob=stationWin(s.code,['MOB']),des=stationWin(s.code,['DES']),poc=stationWin(s.code,['POC']),ena=stationWin(s.code,['ENA']);const b=[];const add=(w,c,tl,top,dk)=>{if(w)b.push({s:w[0],f:w[1],c,dk,h:9,top,t:tl+' '+fD(w[0])+' to '+fD(w[1])});};
-    add(mob,C.gray,'Site survey',3,1);add(des,C.blue,'Design',3);add(poc,C.yellow,'POC',15,1);add(ena,C.sky,'Enabling works',15,1);rows.push({lv:2,rh:28,label:esc(s.name)+star(s),sub:s.line+' · '+(s.prio===1?'priority 1':'priority 2'),bars:b,click:()=>{const l=AC.filter(a=>a.stn===s.code&&['MOB','DES','POC','ENA'].includes(a.ph)&&a.s<to).sort((a,b)=>a.s<b.s?-1:1);drawer(s.name,'Activities up to month 8',`<p class="dn">${l.length} activities; every SAR review is 21 days (15 working days).</p>${actTable(l)}<p>${stBtn(s)}</p>`);}});});
-  rows.push({lv:1,label:'Milestones',bars:[],ms:[['PRJ-M1100','MS1 Mobilization complete (20%)'],['PRJ-M1150','Mobilization and site survey complete (month 2)'],['PRJ-M2100','Detailed baseline approved'],['NRY-POC4100','POC approved, Riyadh (Thumamah)'],['PRJ-M1250','Design complete, priority stations (month 6)']].map(([i,t])=>({d:ABY[i].s,t:t+' '+fD(ABY[i].s),f:1})),click:()=>drawer('Milestones, first six months','',tbl(['Milestone','Date'],[['PRJ-M1100','PRJ-M1150','PRJ-M2100','NRY-POC4100','PRJ-M1250'].map(i=>`<tr><td>${esc(ABY[i].n)}</td><td>${fD(ABY[i].s)}</td></tr>`)].flat()))});
-  gantt($('#g6',el),{from,to,rows,lw:290,rh:24,head:'Activity / station',bands:[{s:m5,f:m7,c:'rgba(118,134,146,.18)'},{s:M.ntp,f:m3,c:'rgba(0,119,139,.07)'}],lines:[{d:m3,c:C.blue},{d:m5,c:C.slate}],click:r=>r.click&&r.click()});
+  const pst=ST.filter(s=>s.prio).map(s=>s.code);const W=Object.fromEntries(DATA.wbs.map(w=>[w.c,w]));const kids={};DATA.wbs.forEach(w=>{if(w.p)(kids[w.p]=kids[w.p]||[]).push(w.c);});
+  const rank={'0580':0,PM:1,ENG:2,PRO:3,CON:4,COM:5};
+  const inScope=a=>a.s<to&&(!$('#onlyp',el).checked||a.stn==='PRJ'||pst.includes(a.stn));
+  let LV=3;const exp=new Set();
+  const win={},acs={};
+  function build(){Object.keys(win).forEach(k=>delete win[k]);Object.keys(acs).forEach(k=>delete acs[k]);
+    AC.filter(inScope).forEach(a=>{let c=a.w;(acs[c]=acs[c]||[]).push(a);while(c){const w=win[c]||(win[c]=[a.s,a.f]);if(a.s<w[0])w[0]=a.s;if(a.f>w[1])w[1]=a.f;c=W[c].p;}});}
+  function setLevel(n){LV=n;exp.clear();DATA.wbs.forEach(w=>{if(w.l<n)exp.add(w.c);});}
+  const order=c=>{const k=W[c];return (rank[c.split('.')[0]]??9)+'|'+(k.l>3?'':'')+c;};
+  function draw(){build();const rows=[];
+    const stCode=c=>c.split('.')[1];
+    const walk=(c)=>{if(!win[c])return;const w=W[c],ch=(kids[c]||[]).filter(x=>win[x]).sort((a,b)=>{const ra=rank[a.split('.')[0]]??9,rb=rank[b.split('.')[0]]??9;return ra-rb||(win[a][0]<win[b][0]?-1:win[a][0]>win[b][0]?1:a<b?-1:1);});
+      const own=(acs[c]||[]).slice().sort((a,b)=>a.s<b.s?-1:a.s>b.s?1:a.id<b.id?-1:1);const hasKids=ch.length||own.length;const open=exp.has(c);
+      const nm=c==='0580'?'Project 0580':esc(w.n);
+      rows.push({lv:w.l<=2?1:2,ind:w.l-1,label:`${hasKids?(open?'▾ ':'▸ '):'&nbsp;&nbsp; '}<b style="color:${C.blue};font-size:10.5px">L${w.l}</b> ${nm}`,sub:c.includes('.')?c:'',bars:[{s:win[c][0],f:win[c][1],c:C.black,h:6,t:nm+': '+fD(win[c][0])+' to '+fD(win[c][1])}],
+        lclick:hasKids?()=>{open?exp.delete(c):exp.add(c);const st=$('#g6',el).scrollTop;draw();$('#g6',el).scrollTop=st;}:null,
+        click:()=>{const l=[];const grab=x=>{(acs[x]||[]).forEach(a=>l.push(a));(kids[x]||[]).forEach(grab);};grab(c);l.sort((a,b)=>a.s<b.s?-1:1);drawer('L'+w.l+' · '+w.n,'WBS '+c+' · '+l.length+' activities starting before month 8',actTable(l));}});
+      if(open){ch.forEach(walk);own.forEach(a=>rows.push({lv:2,ind:w.l,label:'<span style="color:'+C.slate+';font-size:10.5px">A</span> '+esc(a.n),sub:a.id+(a.t==='T'?' · '+a.d+' days':''),bars:a.t==='T'?[{s:a.s,f:a.f,c:PH[a.ph]?PH[a.ph][1]:C.slate,dk:PH[a.ph]&&PH[a.ph][2],h:11,t:a.n+' · '+fD(a.s)+' to '+fD(a.f)}]:[],ms:a.t!=='T'?[{d:a.s,f:a.t==='F',t:a.n+' · '+fD(a.s)}]:[],click:()=>actDrawer(a)}));}};
+    walk('0580');
+    gantt($('#g6',el),{from,to,rows,lw:360,rh:24,head:'WBS level / activity (click the name to expand, the bar for details)',bands:[{s:m5,f:m7,c:'rgba(118,134,146,.18)'},{s:M.ntp,f:m3,c:'rgba(0,119,139,.07)'}],lines:[{d:m3,c:C.blue},{d:m5,c:C.slate}],click:(r,ev)=>{if(r.lclick&&ev&&ev.target.closest('.gl'))r.lclick();else if(r.click)r.click();else if(r.lclick)r.lclick();}});
+    $$('[data-lv]',el).forEach(b=>b.classList.toggle('on',+b.dataset.lv===LV));}
+  $$('[data-lv]',el).forEach(b=>b.onclick=()=>{setLevel(+b.dataset.lv);draw();});
+  $('#onlyp',el).onchange=()=>draw();
+  setLevel(3);draw();
   $$('[data-k]',el).forEach(b=>b.onclick=()=>{const k=b.dataset.k;
     if(k==='rev'){drawer('SAR review of submissions: 21 days','Contract clause 3 (Baseline Programme)','<p>21 calendar days are three working weeks in a Sunday to Thursday week, so every approval activity is 15 working days. It applies to the initial and detailed baseline, survey, concept, preliminary, detailed, IFC, HCIS, POC plan, as-built documents and the taking-over application.</p><p><button class="dbtn" data-go="'+SL.findIndex(s=>s.id==='review')+'">See the review periods by station</button></p>');return;}
-    const ph={mob:['MOB'],des:['DES'],ena:['ENA']}[k];const l=AC.filter(a=>a.t==='T'&&ph.includes(a.ph)&&(pst.some(s=>s.code===a.stn)||a.stn==='PRJ')&&a.s<m7).sort((a,b)=>a.s<b.s?-1:1);
+    const ph={mob:['MOB'],des:['DES'],ena:['ENA']}[k];const pp=ST.filter(s=>s.prio);const l=AC.filter(a=>a.t==='T'&&ph.includes(a.ph)&&(pp.some(s=>s.code===a.stn)||a.stn==='PRJ')&&a.s<m7).sort((a,b)=>a.s<b.s?-1:1);
     if(k==='mob')l.unshift(...AC.filter(a=>a.stn==='PRJ'&&a.t==='T'&&a.id<'PRJ-A2').sort((a,b)=>a.s<b.s?-1:1));
     drawer({mob:'Months 1-2: mobilization and site survey',des:'Months 3-6: design',ena:'Months 5-6: enabling works'}[k],'Priority stations and project level',actTable(l));});
 });

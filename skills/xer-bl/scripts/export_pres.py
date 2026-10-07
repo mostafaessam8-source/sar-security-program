@@ -13,7 +13,7 @@ acts = []
 for code, a in ACTS.items():
     t = 'T' if a.typ == 'TT_Task' else ('F' if a.typ == 'TT_FinMile' else 'M')
     d0 = iso(ES[code]) if t != 'F' else iso(EF[code]); d1 = iso(EF[code]) if t != 'M' else iso(ES[code])
-    acts.append(dict(id=code, n=clean(a), t=t, stn=a.codes.get('STN', 'PRJ'), ep=a.codes.get('EPC'), ph=a.codes.get('PHASE'), sg=a.codes.get('STAGE'), sa=a.codes.get('SUBAPP'),
+    acts.append(dict(id=code, w=a.wbs, n=clean(a), t=t, stn=a.codes.get('STN', 'PRJ'), ep=a.codes.get('EPC'), ph=a.codes.get('PHASE'), sg=a.codes.get('STAGE'), sa=a.codes.get('SUBAPP'),
                      rs=a.codes.get('RESP'), ms=a.codes.get('MST'), pr=[f"{p_} {t_}{('+'+str(l_)) if l_ else ''}" for p_, t_, l_ in meta['pred_of'][code]], s=d0, f=d1, d=a.dur, c=a.cost, p=a.pts * 620, fl=LS[code] - ES[code]))
 D0 = json.load(open('/tmp/claude-0/-home-user/0d8cf00c-df50-59d0-89bb-befade0f854d/scratchpad/deck/data.json'))
 stations = []
@@ -67,7 +67,7 @@ out = dict(
     meta=dict(no=PROJECT_NO, name=PROJECT_NAME, rev=REVISION, ntp=START.isoformat(), end=TERM_END.isoformat(), po=PO, acts=len(ACTS), tasks=sum(1 for a in ACTS.values() if a.typ == 'TT_Task'),
               ms=sum(1 for a in ACTS.values() if a.typ != 'TT_Task'), finish=iso(max(EF.values())), review_wd=REVIEW_WD, cams=D['cams'], camT=D['camT'], camLine=D['camLine'], catPriced=D['catPriced'],
               m2=iso(M2_IDX), m6=iso(M6_IDX), ena=iso(ENA_IDX), approvals=dict(stages_ap)),
-    months=months, acts=acts, stations=stations, inv_m=inv_m, ms_def={k_: dict(n=v[0], p=v[1]) for k_, v in MS.items()},
+    months=months, wbs=[dict(c=w['code'], n=w['name'], l=w['level'], p=w['parent']) for w in WBS.values()], acts=acts, stations=stations, inv_m=inv_m, ms_def={k_: dict(n=v[0], p=v[1]) for k_, v in MS.items()},
     prj=dict(cc=curve(prj, 'c'), pc=curve(prj, 'p')),
     key=dict(m1100=iso(EF['PRJ-M1100']), m1150=iso(EF['PRJ-M1150']), m2100=iso(EF['PRJ-M2100']), m1250=iso(EF['PRJ-M1250']), mx99=iso(EF['PRJ-MX99']), poc=iso(EF['NRY-POC4100'])),
     events=[dict(c=e[0], l=e[1], ms=e[2], d=e[3], a=e[4]) for e in inv_events],
