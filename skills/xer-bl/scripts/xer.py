@@ -86,7 +86,7 @@ def build_xer(lag):
     # activity code types
     CT = OrderedDict([('EPC', 'EPC phase'), ('AREA', 'Area'), ('STN', 'Station'), ('RAIL', 'Railway'), ('DISC', 'Discipline'), ('RESP', 'Responsibility'),
                       ('MST', 'Payment milestone'), ('STAGE', 'Design stage'), ('SUBAPP', 'Submittal or approval'), ('PRIO', 'Priority'), ('PHASE', 'Programme phase')])
-    LABEL = {'EPC': {'ENG': 'Engineering', 'PRO': 'Procurement', 'CON': 'Construction', 'COM': 'Commissioning and handover', 'PMG': 'Project management', 'MS': 'Milestone'},
+    LABEL = {'EPC': {'MOB': 'Mobilization', 'ENG': 'Engineering', 'PRO': 'Procurement', 'CON': 'Construction', 'COM': 'Commissioning and handover', 'PMG': 'Project management', 'MS': 'Milestone'},
              'AREA': {'NSR': 'NSR', 'EWR': 'EWR', 'HHR': 'HHR', 'PRJ': 'Project level'},
              'RAIL': {'NSR': 'NSR', 'EWR': 'EWR', 'HHR': 'HHR', 'ALL': 'All railways'},
              'DISC': {'DOCS': 'Design documentation', 'CCTV': 'CCTV system', 'VMS': 'Video management and wall', 'ACC': 'Access control and intercom', 'UPSNET': 'UPS, network and cabinets', 'CIVIL': 'Civil works', 'TC': 'Testing, commissioning and handover', 'PM': 'Project management and logistics'},

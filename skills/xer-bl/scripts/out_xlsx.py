@@ -31,7 +31,7 @@ def put(ws, row, vals, fmts=None, bold=False, fill=None):
         if fmts and fmts.get(i): c.number_format = fmts[i]
         if fill: c.fill = PatternFill('solid', fgColor=fill)
 
-EPCN = {'ENG': 'Engineering', 'PRO': 'Procurement', 'CON': 'Construction', 'COM': 'Commissioning and handover', 'PMG': 'Project management', 'MS': 'Milestone'}
+EPCN = {'MOB': 'Mobilization', 'ENG': 'Engineering', 'PRO': 'Procurement', 'CON': 'Construction', 'COM': 'Commissioning and handover', 'PMG': 'Project management', 'MS': 'Milestone'}
 def wcode(a): return a.wbs
 wb = openpyxl.Workbook()
 
