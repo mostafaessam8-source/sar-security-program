@@ -56,6 +56,7 @@ TERM_IDX = max(i for i, d in enumerate(WORK) if d <= TERM_END)
 
 REVIEW_WD = 15          # SAR review of submissions: 21 calendar days = 3 working weeks (Sun-Thu) = 15 working days
 DESIGN_TOTAL_WD = 79    # four months of design including the survey (working days), from design start to the last SAR approval
+DESIGN_E = {}            # per-station design submittal chain (working days), calibrated so design spans four calendar months
 def _add_months(d, n):
     y, m = divmod(d.month - 1 + n, 12); return dt.date(d.year + y, m + 1, 1)
 def _last_wd_before(d): return max(i for i, w in enumerate(WORK) if w < d)

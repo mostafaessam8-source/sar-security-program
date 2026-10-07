@@ -1,6 +1,6 @@
 from model import *
 
-def solve(buffer_days=20):
+def solve0(buffer_days=20):
     surveys, accepted = build()
     # pass 1: find detailed-baseline-approved day
     wave0 = {sid: 0 for sid in ST}
@@ -72,3 +72,27 @@ if __name__ == '__main__':
     print('closeout', WORK[ES['PRJ-C1010']], WORK[EF['PRJ-C1010']], 'completion', WORK[EF['PRJ-MX99']])
     import collections
     print(collections.Counter(w['level'] for w in WBS.values()), len(WBS))
+
+
+def _plus_months(d, n):
+    y, m0 = divmod(d.month - 1 + n, 12); y += d.year; m = m0 + 1
+    import calendar
+    return dt.date(y, m, min(d.day, calendar.monthrange(y, m)[1]))
+
+def solve(buffer_days=20):
+    """Find the wave stretch factor, then calibrate every station's design so that survey + design + last SAR approval span four calendar months."""
+    best = None
+    for it in range(6):
+        best = solve0(buffer_days)
+        k, lag = best
+        order, pred_of, ES, EF = cpm(lag)
+        changed = False
+        for sid, s in ST.items():
+            c = s['code']; d0 = WORK[ES[f'{c}-E1010']]
+            tgt = max(i for i, w in enumerate(WORK) if w < _plus_months(d0, 4))
+            if s['prio']: tgt = min(tgt, M6_IDX)      # priority stations finish design with month 6
+            diff = tgt - EF[f'{c}-E1100']
+            if diff:
+                cur = DESIGN_E.get(sid, s['p']['E']); DESIGN_E[sid] = max(20, cur + diff); changed = True
+        if not changed: break
+    return best

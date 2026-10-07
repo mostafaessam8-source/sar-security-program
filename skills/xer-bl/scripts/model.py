@@ -45,7 +45,7 @@ def build(k_stretch=1.0, buffer_days=20):
     dbase_dur_days = None
     surveys = []; accepted = []
     for sid, s in ST.items():
-        c = s['code']; p = s['p']; E = p['E']; S = p['sat']; I = p['inst']; C = p['civil']
+        c = s['code']; p = s['p']; E = DESIGN_E.get(sid, p['E']); S = p['sat']; I = p['inst']; C = p['civil']
         name = s['name']
         for ep in ('ENG', 'PRO', 'CON', 'COM'):
             wbs(f'{ep}.{c}', f'{name} ({s["line"]})', ep)
