@@ -126,7 +126,7 @@ wm.freeze_panes = 'E5'; wm.auto_filter.ref = f'A4:V{last_map}'
 wk = wb.create_sheet('Distribution_Keys')
 wk['A1'] = 'Distribution keys (cost within each payment milestone, and progress weights)'; wk['A1'].font = Font(name='Calibri', bold=True, size=14, color=BLUE)
 head(wk, 3, ['Milestone', 'Activity template', 'Key', 'Basis'], [12, 60, 12, 90])
-tmpl = [('MS2', 'Survey, concept, preliminary, detailed, IFC, HCIS submittals', '5 / 10 / 20 / 40 / 20 / 5 %', 'Design effort split by stage; the railway design and engineering package sits inside the station price. Riyadh (Thumamah): 85% of the keys, 15% to the POC submittal and test activities (no separate POC item in Annex 3)'),
+tmpl = [('MS2', 'Survey, concept, preliminary, detailed, IFC, HCIS submittals', '5 / 10 / 20 / 40 / 20 / 5 % of 98%', 'Survey permit processing takes 2% of the MS2 bucket; design effort split by stage; the railway design and engineering package sits inside the station price. Riyadh (Thumamah): 85% of the keys, 15% to the POC submittal and test activities (no separate POC item in Annex 3)'),
         ('MS3', 'Approval activities of the same six stages', '5 / 10 / 20 / 40 / 20 / 5 %', 'Mirror of the submittal key. Every SAR review is 21 days (15 working days). Riyadh (Thumamah): 15% to the POC approvals (plan 4%, consultant inspection 5%, approval 6%)'),
         ('MS4', 'Manufacture CCTV, VMS, access control, UPS and network', '75% split by BOQ section share', 'A1, A2, A3 and A4+A5 shares of the station equipment value'),
         ('MS4', 'FAT / shipping and customs / delivery and receiving', '5 / 15 / 5 %', 'Fixed keys; spares and logistics sit inside delivery'),

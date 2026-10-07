@@ -25,7 +25,7 @@ def build(k_stretch=1.0, buffer_days=20):
     prj('PRJ-A1040', 'Mobilization: site establishment, offices, personnel and tools', pm, 25, [('PRJ-M0000', 'FS', 5)], MST='MS1')
     prj('PRJ-A1050', 'Mobilization submittals: QC programme and ITP, HSE, security, procurement and shipping plan', pm, 20, [('PRJ-M0000', 'FS', 5)], SUBAPP='Submittal', MST='MS1')
     prj('PRJ-M1100', 'MS1 Mobilization complete (payment milestone 20%)', 'PM.MST', 0, [('PRJ-A1010', 'FS', 0), ('PRJ-A1030', 'FS', 0), ('PRJ-A1040', 'FS', 0), ('PRJ-A1050', 'FS', 0)], 'TT_FinMile', EPC='MS', MST='MS1', RESP='SAR')
-    prj('PRJ-M1150', 'Mobilization and site survey complete (end of month 2)', 'PM.MST', 0, [('PRJ-M1100', 'FS', 0), ('PRJ-M0000', 'FS', M2_IDX + 1)], 'TT_FinMile', EPC='MS', RESP='ETECHS')
+    prj('PRJ-M1150', 'Mobilization and survey permits complete (end of month 2)', 'PM.MST', 0, [('PRJ-M1100', 'FS', 0), ('PRJ-M0000', 'FS', M2_IDX + 1)], 'TT_FinMile', EPC='MS', RESP='ETECHS')
     prj('PRJ-A2010', 'Detailed baseline programme (within 21 days after survey)', pm, 15, [], SUBAPP='Submittal')
     prj('PRJ-A2020', 'SAR review and approval of detailed baseline', pm, 15, [('PRJ-A2010', 'FS', 0)], RESP='SAR', SUBAPP='Approval')
     prj('PRJ-M2100', 'Detailed baseline programme approved', 'PM.MST', 0, [('PRJ-A2020', 'FS', 0)], 'TT_FinMile', EPC='MS', RESP='SAR')
@@ -54,6 +54,7 @@ def build(k_stretch=1.0, buffer_days=20):
                   ('DET', 'Detailed design'), ('IFC', 'IFC and shop drawings'), ('HCS', 'HCIS documentation (Stage 3 and 4)'), ('ASB', 'As-built and O&M documentation')]
         for sc, sn in stages:
             wbs(f'{eng}.{sc}', sn, eng); wbs(f'{eng}.{sc}.SUB', 'Submittal', f'{eng}.{sc}'); wbs(f'{eng}.{sc}.APR', 'Approval', f'{eng}.{sc}')
+            if sc == 'SRV': wbs(f'{eng}.SRV.PRM', 'Site access permit', f'{eng}.SRV')
         for pc, pn in [('CCT', 'CCTV system'), ('VMS', 'Video management and video wall'), ('ACC', 'Access control and intercom'), ('UPN', 'UPS, network and cabinets'), ('LOG', 'FAT and logistics')]:
             wbs(f'{pro}.{pc}', pn, pro)
         wbs(f'{con}.ENA', 'Enabling works', con); wbs(f'{con}.CIV', 'Civil works', con); wbs(f'{con}.INS', 'Installation', con)
@@ -69,9 +70,10 @@ def build(k_stretch=1.0, buffer_days=20):
             return a
         c1 = rnd(0.15 * E); p1 = rnd(0.25 * E); d1 = rnd(0.40 * E); i1 = E - (c1 + p1 + d1); L = rnd(0.15 * E); h1 = E - (c1 + p1 + L)
         ENGK = dict(EPC='ENG', DISC='DOCS')
-        A('E1010', 'Survey: submittal of site survey and as-found report', f'{eng}.SRV.SUB', p['sv'], [], RESP='ETECHS', STAGE='Survey', SUBAPP='Submittal', **ENGK)
+        A('E1005', 'Survey: site access permit - application and approval (two months)', f'{eng}.SRV.PRM', 45, [], RESP='SAR', STAGE='Survey', SUBAPP='Approval', **ENGK)
+        A('E1010', 'Survey: submittal of site survey and as-found report', f'{eng}.SRV.SUB', p['sv'], [('E1005', 'FS', 0)] + ([('PRJ-M1150', 'FS', 0)] if prio else []), RESP='ETECHS', STAGE='Survey', SUBAPP='Submittal', **ENGK)
         A('E1020', 'Survey: SAR approval of survey report', f'{eng}.SRV.APR', p['appr'], [('E1010', 'FS', 0)], RESP='SAR', STAGE='Survey', SUBAPP='Approval', **ENGK)
-        A('E1030', 'Concept design: submittal', f'{eng}.CNC.SUB', c1, ([('E1020', 'FS', 0), ('PRJ-M1150', 'FS', 0)] if prio else [('E1020', 'FS', 0), ('E1010', 'SS', 43)]), RESP='ETECHS', STAGE='Concept', SUBAPP='Submittal', **ENGK)
+        A('E1030', 'Concept design: submittal', f'{eng}.CNC.SUB', c1, [('E1010', 'FS', 0)], RESP='ETECHS', STAGE='Concept', SUBAPP='Submittal', **ENGK)
         A('E1040', 'Concept design: SAR review and approval', f'{eng}.CNC.APR', p['appr'], [('E1030', 'FS', 0)], RESP='SAR', STAGE='Concept', SUBAPP='Approval', **ENGK)
         A('E1050', 'Preliminary design: submittal', f'{eng}.PRE.SUB', p1, [('E1030', 'FS', 0)], RESP='ETECHS', STAGE='Preliminary', SUBAPP='Submittal', **ENGK)
         A('E1060', 'Preliminary design: SAR review and approval', f'{eng}.PRE.APR', p['appr'], [('E1050', 'FS', 0)], RESP='SAR', STAGE='Preliminary', SUBAPP='Approval', **ENGK)
@@ -91,12 +93,12 @@ def build(k_stretch=1.0, buffer_days=20):
             for pc_, pn_ in (('PLN', 'POC plan and test procedure'), ('NET', 'POC network'), ('CAM', 'POC CCTV'), ('INS', 'POC inspection and access control'), ('TST', 'POC integrated test, inspection and approval')):
                 wbs(f'{eng}.POC.{pc_}', pn_, f'{eng}.POC')
             PC = dict(EPC='ENG', STAGE='POC')
-            A('POC1010', 'POC plan and test procedure: submittal', f'{eng}.POC.PLN', 7, [('E1010', 'FS', 0)], DISC='DOCS', RESP='ETECHS', SUBAPP='Submittal', **PC)
+            A('POC1010', 'POC plan and test procedure: submittal', f'{eng}.POC.PLN', 5, [('PRJ-M1150', 'FS', 0)], DISC='DOCS', RESP='ETECHS', SUBAPP='Submittal', **PC)
             A('POC1020', 'POC plan: SAR and consultant review and approval (21 days)', f'{eng}.POC.PLN', p['appr'], [('POC1010', 'FS', 0)], DISC='DOCS', RESP='SAR', SUBAPP='Approval', **PC)
-            A('POC2010', 'POC network: install test bed and fibre/IP backbone', f'{eng}.POC.NET', 10, [('POC1020', 'FS', 0)], DISC='UPSNET', RESP='ETECHS', SUBAPP='-', **PC)
-            A('POC2020', 'POC CCTV: install and configure demonstration cameras and analytics', f'{eng}.POC.CAM', 15, [('POC2010', 'FS', 0)], DISC='CCTV', RESP='ETECHS', SUBAPP='-', **PC)
-            A('POC2030', 'POC inspection and access control: install and configure demonstration points', f'{eng}.POC.INS', 15, [('POC2010', 'FS', 0)], DISC='ACC', RESP='ETECHS', SUBAPP='-', **PC)
-            A('POC3010', 'POC integrated testing and demonstration (cameras, inspection, network)', f'{eng}.POC.TST', 10, [('POC2020', 'FS', 0), ('POC2030', 'FS', 0)], DISC='TC', RESP='ETECHS', SUBAPP='-', **PC)
+            A('POC2010', 'POC network: install test bed and fibre/IP backbone', f'{eng}.POC.NET', 8, [('POC1020', 'FS', 0)], DISC='UPSNET', RESP='ETECHS', SUBAPP='-', **PC)
+            A('POC2020', 'POC CCTV: install and configure demonstration cameras and analytics', f'{eng}.POC.CAM', 12, [('POC2010', 'FS', 0)], DISC='CCTV', RESP='ETECHS', SUBAPP='-', **PC)
+            A('POC2030', 'POC inspection and access control: install and configure demonstration points', f'{eng}.POC.INS', 12, [('POC2010', 'FS', 0)], DISC='ACC', RESP='ETECHS', SUBAPP='-', **PC)
+            A('POC3010', 'POC integrated testing and demonstration (cameras, inspection, network)', f'{eng}.POC.TST', 8, [('POC2020', 'FS', 0), ('POC2030', 'FS', 0)], DISC='TC', RESP='ETECHS', SUBAPP='-', **PC)
             A('POC3020', 'POC test report: submittal', f'{eng}.POC.TST', 5, [('POC3010', 'FS', 0)], DISC='DOCS', RESP='ETECHS', SUBAPP='Submittal', **PC)
             A('POC4010', 'POC site inspection and witnessing with consultant', f'{eng}.POC.TST', 10, [('POC3020', 'FS', 0)], DISC='TC', RESP='SAR', SUBAPP='Approval', **PC)
             A('POC4020', 'POC approval by SAR and consultant (inspection and approval within one month)', f'{eng}.POC.TST', 12, [('POC4010', 'FS', 0)], DISC='DOCS', RESP='SAR', SUBAPP='Approval', **PC)
@@ -106,7 +108,7 @@ def build(k_stretch=1.0, buffer_days=20):
         # enabling works: priority stations start in month 5 (last two months of design); others after MS3
         XK = dict(EPC='CON', STAGE='-', SUBAPP='-', RESP='ETECHS', DISC='CIVIL')
         x1, x2 = (10, 15) if prio == 1 else (5, 10)
-        xp = [('PRJ-M1150', 'FS', ENA_IDX - (M2_IDX + 1))] if prio == 1 else ([('E1030', 'SS', 40)] if prio == 2 else [('E1030', 'SS', 42)])
+        xp = [('PRJ-M1150', 'FS', ENA_IDX - (M2_IDX + 1))] if prio == 1 else ([('E1010', 'SS', 40)] if prio == 2 else [('E1010', 'SS', 42)])
         A('X1010', 'Enabling works: site preparation, setting out, temporary works and utilities clearance', f'{con}.ENA', x1, xp, **XK)
         A('X1020', 'Enabling works: cable routes, duct-bank and cabinet plinth preparation', f'{con}.ENA', x2, [('X1010', 'FS', 0)], **XK)
         # procurement
@@ -158,8 +160,9 @@ def build(k_stretch=1.0, buffer_days=20):
         appr_key = {'E1020': 5, 'E1040': 10, 'E1060': 20, 'E1080': 40, 'E1100': 20, 'E1120': 5}
         poc_sub = {'POC1010': 1.5, 'POC2010': 2, 'POC2020': 3, 'POC2030': 3, 'POC3010': 3.5, 'POC3020': 2}     # % of the MS2 bucket (15%)
         poc_apr = {'POC1020': 4, 'POC4010': 5, 'POC4020': 6}                                                  # % of the MS3 bucket (15%)
-        if sid == 'NSR-RYD':
-            design_key = {k_: v_ * 0.85 for k_, v_ in design_key.items()}; appr_key = {k_: v_ * 0.85 for k_, v_ in appr_key.items()}
+        dsc, asc = (0.83, 0.85) if sid == 'NSR-RYD' else (0.98, 1.0)
+        design_key = {k_: v_ * dsc for k_, v_ in design_key.items()}; appr_key = {k_: v_ * asc for k_, v_ in appr_key.items()}
+        design_key['E1005'] = 2.0   # permit processing, % of the MS2 bucket (no separate Annex 3 item)
         KEYS = []
         if sid == 'NSR-RYD':
             for n, w in poc_sub.items(): KEYS.append((n, 'MS2', w / 100.0, f'POC key {w}% of the engineering-submittal milestone (no separate POC item in Annex 3; carved from the design and engineering package)', 'Annex 3 Design and engineering package (railway) allocated by station hardware share'))
@@ -191,7 +194,8 @@ def build(k_stretch=1.0, buffer_days=20):
         # progress (percent of the whole project)
         stn_pct = 96.0 * f
         E_stage = {'SRV': (8, 'E1010', 'E1020'), 'CNC': (10, 'E1030', 'E1040'), 'PRE': (18, 'E1050', 'E1060'), 'DET': (30, 'E1070', 'E1080'), 'IFC': (18, 'E1090', 'E1100'), 'HCS': (6, 'E1110', 'E1120'), 'ASB': (10, 'E1130', 'E1140')}
-        e_scale = 0.90 if sid == 'NSR-RYD' else 1.0
+        e_scale = (0.90 if sid == 'NSR-RYD' else 1.0) * 0.98
+        ACTS[f'{c}-E1005'].prog = stn_pct * 12.0 * 0.02 / 100.0
         if sid == 'NSR-RYD':
             pocs = [f'{c}-{n}' for n in ('POC1010', 'POC1020', 'POC2010', 'POC2020', 'POC2030', 'POC3010', 'POC3020', 'POC4010', 'POC4020')]
             pd_ = sum(ACTS[x].dur for x in pocs)
@@ -206,13 +210,13 @@ def build(k_stretch=1.0, buffer_days=20):
         if sid == 'NSR-RYD': ACTS[f'{c}-T1030'].prog = stn_pct * 0.5 / 100.0
         # wave start link
         if prio:
-            ACTS[f'{c}-E1010'].preds.append(('PRJ-M0000', 'FS', 10 if prio == 2 else 5))
+            ACTS[f'{c}-E1005'].preds.append(('PRJ-M0000', 'FS', 0))
         else:
-            ACTS[f'{c}-E1010'].preds.append(('PRJ-M2100', 'FS', ('WAVE', sid)))
+            ACTS[f'{c}-E1005'].preds.append(('PRJ-M2100', 'FS', ('WAVE', sid)))
     # detailed baseline after both Riyadh surveys; closeout after all acceptances
     pstn = [s_ for s_ in ST.values() if s_['prio']]
     ACTS['PRJ-A2010'].preds = [(f'{s_["code"]}-E1010', 'FS', 0) for s_ in pstn]
-    ACTS['PRJ-M1150'].preds += [(f'{s_["code"]}-E1020', 'FS', 0) for s_ in pstn]
+    ACTS['PRJ-M1150'].preds += [(f'{s_["code"]}-E1005', 'FS', 0) for s_ in pstn]
     ACTS['PRJ-M1250'].preds = [(f'{s_["code"]}-{n}', 'FS', 0) for s_ in pstn for n in ('E1100', 'E1120')] + [(f'{ST["NSR-RYD"]["code"]}-POC4100', 'FS', 0)]
     ACTS['PRJ-C1010'].preds = [(a, 'FS', 0) for a in accepted]
     return surveys, accepted

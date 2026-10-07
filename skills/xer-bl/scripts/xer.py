@@ -95,7 +95,7 @@ def build_xer(lag):
              'STAGE': {'-': 'Not a design stage', 'POC': 'Proof of concept', 'Survey': 'Site survey', 'Concept': 'Concept design', 'Preliminary': 'Preliminary design', 'Detailed': 'Detailed design', 'IFC': 'IFC and shop drawings', 'HCIS': 'HCIS documentation', 'As-built': 'As-built and O&M'},
              'SUBAPP': {'-': 'Not applicable', 'Submittal': 'Submittal', 'Approval': 'Approval'},
              'PRIO': {'Priority 1': 'Priority 1 - Makkah and Riyadh (Thumamah)', 'Priority 2': 'Priority 2 - Riyadh (Malaz)', 'Standard': 'Standard'},
-             'PHASE': {'MOB': 'Mobilization and site survey (months 1-2)', 'DES': 'Design (months 3-6)', 'POC': 'Proof of concept - Riyadh (Thumamah)', 'ENA': 'Enabling works',
+             'PHASE': {'MOB': 'Mobilization and survey permit (months 1-2)', 'DES': 'Design including survey (months 3-6)', 'POC': 'Proof of concept - Riyadh (Thumamah)', 'ENA': 'Enabling works',
                        'PRO': 'Procurement and supply', 'CON': 'Construction and installation', 'COM': 'Testing, commissioning and handover', 'PMG': 'Project management and closeout', 'MS': 'Milestones'}}
     LABEL['STN'] = {'PRJ': 'Project level'} | {s['code']: f"{s['name']} ({s['line']})" for s in ST.values()}
     tid = {}; types = []; vals = []; vid = {}
@@ -129,7 +129,7 @@ def build_xer(lag):
         if a.typ != 'TT_Task' and not suf.startswith('POC'): return 'MS'
         if code.startswith('PRJ-'): return 'MOB' if suf[0] == 'A' and suf < 'A2000' else ('PMG')
         if suf.startswith('POC'): return 'POC'
-        if suf in ('E1010', 'E1020'): return 'MOB'
+        if suf == 'E1005': return 'MOB'
         if suf[0] == 'E': return 'COM' if suf in ('E1130', 'E1140') else 'DES'
         return {'X': 'ENA', 'P': 'PRO', 'C': 'CON', 'T': 'COM'}[suf[0]]
     for code, a in ACTS.items():
