@@ -33,7 +33,6 @@ def gantt6():
     rows=[('Mobilization (site, personnel, tools)',['PRJ-A1040'],'#8DB9C2'),
           ('Site access permits for surveys (all stations)',['PRJ-A1060'],'#00778B'),
           ('Survey and design - Riyadh (Thumamah)',['NRY-E1010','NRY-E1100'],'#3D3935'),('Survey and design - Makkah',['HMK-E1010','HMK-E1100'],'#3D3935'),
-          ('POC - Riyadh (Thumamah)',['NRY-POC1010','NRY-POC4100'],'#E2A400'),
           ('Enabling works - Riyadh (Thumamah)',['NRY-X1010','NRY-X1020'],'#C8C9C7'),('Enabling works - Makkah',['HMK-X1010','HMK-X1020'],'#C8C9C7')]
     fig,ax=plt.subplots(figsize=(8.6,3.8))
     for i,(n,cs,col) in enumerate(rows):
@@ -81,7 +80,6 @@ doc.add_heading('2. Changes in this revision',1)
 table([('First six months','Months 1-2 mobilization and the survey access permit (the permit takes two months); months 3-6 design (four months) which starts with the site survey. Milestones: mobilization and permits complete, design complete.'),
        ('Design rule','At every station: two months of mobilization and survey, then four months of design starting two months after the station mobilization starts; enabling works start in the last two months of design (two months of overlap). At the priority stations this is months 1-2, 3-6 and 5-6 of the project.'),
        ('Priority','Makkah and Riyadh (Thumamah) are Priority 1 and run works in parallel with design. Riyadh (Malaz) is Priority 2.'),
-       ('Proof of concept','POC at Riyadh (Thumamah) for CCTV, inspection and access control, and network, with one month for consultant inspection and approval.'),
        ('Review period','Every SAR review of a submission is 21 days (15 working days). Survey approval was 5 days and is now 21 days.'),
        ('WBS','Stations are now level 3 of the WBS (project, EPC phase, station). Priority and railway are activity codes.'),
        ('Identity','Project number 0580 and the official name on every output. Programme phase added as an activity code.')],['Item','Change'],[3.5,12.5])
@@ -101,11 +99,6 @@ doc.add_heading('5. Priority stations',1)
 P('Priority 1: Makkah (Haramain) and Riyadh (Thumamah, North South Railway). Their permits are applied for first and their enabling and civil works run in parallel with design. Equipment is manufactured only after SAR approval of the engineering (milestone MS3), so no equipment is ordered before approval. Priority 2: Riyadh (Malaz, East West Railway), permitted in the same two months. The remaining stations follow in waves after the detailed baseline is approved, each with the same four month design.')
 pr=[(s['name'],s['line'],{1:'Priority 1',2:'Priority 2',0:'Standard'}[s['prio']],D(ES[s['code']+'-E1010']),D(max(EF[c] for c,a in ACTS.items() if a.codes.get('STN')==s['code']))) for s in ST.values()]
 table(pr,['Station','Railway','Priority','Design start','Station finish'],[5,2,2.5,3.2,3.2])
-doc.add_heading('6. Proof of concept at Riyadh (Thumamah)',1)
-P('The POC covers three systems: CCTV, inspection and access control (Annex 3 section A3), and the network. It sits inside engineering because it validates the design before manufacture. SAR and the consultant approve the POC plan within 21 days, the Contractor builds and tests the POC, and the consultant then inspects and approves it within one month (22 working days: 10 for site inspection and 12 for approval). POC approval is a predecessor of the engineering approval milestone MS3 at this station, so manufacture of its equipment waits for it.')
-pc=[c for c in ACTS if c.startswith('NRY-POC')]
-table([(c,ACTS[c].name,D(ES[c]) if ACTS[c].typ=='TT_Mile' else D(ES[c]),D(EF[c]),ACTS[c].dur) for c in pc],['ID','Activity','Start','Finish','Days'],[2.8,8.2,2.3,2.3,1.2])
-P('Cost note: Annex 3 has no separate POC item. The POC activities are funded from 15% of the Riyadh (Thumamah) design and engineering milestones (MS2 and MS3) until SAR confirms otherwise.')
 doc.add_heading('7. Review and approval periods',1)
 P('All SAR reviews and approvals of submissions are 21 days. In a Sunday to Thursday calendar that is three working weeks, so each approval activity is 15 working days. This applies to the initial and detailed baseline programme, the survey, every design stage, HCIS documents, POC plan, as-built documents and the taking-over application. The POC inspection and approval, and the mock-up approval at Riyadh (Thumamah), are separate one month periods (22 working days) as instructed.')
 ap=[c for c in tasks if ACTS[c].codes.get('SUBAPP')=='Approval']
@@ -146,5 +139,5 @@ for t in ['Durations and station order are Contractor planning assumptions.','Ei
 doc.add_heading('19. Risks to the programme',1)
 table([('Eid dates differ from the estimate','Confirm before submission and reschedule'),('Long-lead equipment at Haramain stations (largest value)','Early procurement approval and FAT planning'),('SAR approval time above 21 days','Early submission and an approval log'),('POC not approved within one month','Early plan approval; consultant booked in advance'),('Enabling works before engineering approval','Limit to non-design-dependent work; confirm layouts at concept approval'),('Station access and railway possession','Coordinate during mobilization'),('Conflict between Annex 4 item 33 (fast-track) and Annex 5 on HCIS','Clarify with SAR before design submittals')],['Risk','Mitigation'],[8,8])
 doc.add_heading('20. Submission checklist',1)
-for t in ['Confirm the project name spelling and the Eid dates.','Open the XER in P6 24, schedule it, and compare dates with this narrative.','Confirm the priority order and the POC scope with SAR.','Check the cost mapping against the Annex 3 price table.','Submit the XER, narrative, BOQ mapping and read-me together.']: B(t)
+for t in ['Confirm the project name spelling and the Eid dates.','Open the XER in P6 24, schedule it, and compare dates with this narrative.','Confirm the priority order with SAR.','Check the cost mapping against the Annex 3 price table.','Submit the XER, narrative, BOQ mapping and read-me together.']: B(t)
 doc.save(f'{OUT}/0580_Schedule_Narrative.docx'); print('ok',len(crit),len(near),D(max(EF.values())))

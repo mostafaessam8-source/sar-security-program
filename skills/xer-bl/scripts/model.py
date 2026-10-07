@@ -86,24 +86,6 @@ def build(k_stretch=1.0, buffer_days=20):
         A('E1140', 'As-built and O&M documentation: SAR review and approval', f'{eng}.ASB.APR', p['appr'], [('E1130', 'FS', 0)], RESP='SAR', STAGE='As-built', SUBAPP='Approval', **ENGK)
         A('E1200', 'MS2 Engineering submittal complete (10%)', eng, 0, [('E1090', 'FS', 0), ('E1110', 'FS', 0)], 'TT_FinMile', EPC='MS', DISC='DOCS', RESP='ETECHS', STAGE='-', SUBAPP='-', MST='MS2')
         A('E1210', 'MS3 Engineering approved by SAR (10%)', eng, 0, [('E1020', 'FS', 0), ('E1040', 'FS', 0), ('E1060', 'FS', 0), ('E1080', 'FS', 0), ('E1100', 'FS', 0), ('E1120', 'FS', 0), ('E1200', 'FS', 0)], 'TT_FinMile', EPC='MS', DISC='DOCS', RESP='SAR', STAGE='-', SUBAPP='-', MST='MS3')
-        if sid == 'NSR-RYD':
-            # proof of concept (POC) at Riyadh (Thumamah): CCTV, inspection and access control, network
-            wbs(f'{eng}.POC', 'Proof of concept (POC)', eng)
-            for pc_, pn_ in (('PLN', 'POC plan and test procedure'), ('NET', 'POC network'), ('CAM', 'POC CCTV'), ('INS', 'POC inspection and access control'), ('TST', 'POC integrated test, inspection and approval')):
-                wbs(f'{eng}.POC.{pc_}', pn_, f'{eng}.POC')
-            PC = dict(EPC='ENG', STAGE='POC')
-            A('POC1010', 'POC plan and test procedure: submittal', f'{eng}.POC.PLN', 5, [('PRJ-M1150', 'FS', 0)], DISC='DOCS', RESP='ETECHS', SUBAPP='Submittal', **PC)
-            A('POC1020', 'POC plan: SAR and consultant review and approval (21 days)', f'{eng}.POC.PLN', p['appr'], [('POC1010', 'FS', 0)], DISC='DOCS', RESP='SAR', SUBAPP='Approval', **PC)
-            A('POC2010', 'POC network: install test bed and fibre/IP backbone', f'{eng}.POC.NET', 8, [('POC1020', 'FS', 0)], DISC='UPSNET', RESP='ETECHS', SUBAPP='-', **PC)
-            A('POC2020', 'POC CCTV: install and configure demonstration cameras and analytics', f'{eng}.POC.CAM', 12, [('POC2010', 'FS', 0)], DISC='CCTV', RESP='ETECHS', SUBAPP='-', **PC)
-            A('POC2030', 'POC inspection and access control: install and configure demonstration points', f'{eng}.POC.INS', 12, [('POC2010', 'FS', 0)], DISC='ACC', RESP='ETECHS', SUBAPP='-', **PC)
-            A('POC3010', 'POC integrated testing and demonstration (cameras, inspection, network)', f'{eng}.POC.TST', 8, [('POC2020', 'FS', 0), ('POC2030', 'FS', 0)], DISC='TC', RESP='ETECHS', SUBAPP='-', **PC)
-            A('POC3020', 'POC test report: submittal', f'{eng}.POC.TST', 5, [('POC3010', 'FS', 0)], DISC='DOCS', RESP='ETECHS', SUBAPP='Submittal', **PC)
-            A('POC4010', 'POC site inspection and witnessing with consultant', f'{eng}.POC.TST', 10, [('POC3020', 'FS', 0)], DISC='TC', RESP='SAR', SUBAPP='Approval', **PC)
-            A('POC4020', 'POC approval by SAR and consultant (inspection and approval within one month)', f'{eng}.POC.TST', 12, [('POC4010', 'FS', 0)], DISC='DOCS', RESP='SAR', SUBAPP='Approval', **PC)
-            A('POC4100', 'POC approved', eng, 0, [('POC4020', 'FS', 0)], 'TT_FinMile', EPC='MS', DISC='DOCS', RESP='SAR', STAGE='POC', SUBAPP='-')
-            ACTS[f'{c}-E1200'].preds.append((f'{c}-POC3020', 'FS', 0))
-            ACTS[f'{c}-E1210'].preds.append((f'{c}-POC4100', 'FS', 0))
         # enabling works: priority stations start in month 5 (last two months of design); others after MS3
         XK = dict(EPC='CON', STAGE='-', SUBAPP='-', RESP='ETECHS', DISC='CIVIL')
         x1, x2 = (10, 15) if prio == 1 else (5, 10)
@@ -157,15 +139,10 @@ def build(k_stretch=1.0, buffer_days=20):
         pk = {'P1010': s['hw']['cctv'] / H5, 'P1020': s['hw']['vms'] / H5, 'P1030': s['hw']['ac'] / H5, 'P1040': (s['hw']['ups'] + s['hw']['net']) / H5}
         design_key = {'E1010': 5, 'E1030': 10, 'E1050': 20, 'E1070': 40, 'E1090': 20, 'E1110': 5}
         appr_key = {'E1020': 5, 'E1040': 10, 'E1060': 20, 'E1080': 40, 'E1100': 20, 'E1120': 5}
-        poc_sub = {'POC1010': 1.5, 'POC2010': 2, 'POC2020': 3, 'POC2030': 3, 'POC3010': 3.5, 'POC3020': 2}     # % of the MS2 bucket (15%)
-        poc_apr = {'POC1020': 4, 'POC4010': 5, 'POC4020': 6}                                                  # % of the MS3 bucket (15%)
-        dsc, asc = (0.83, 0.85) if sid == 'NSR-RYD' else (0.98, 1.0)
+        dsc, asc = 0.98, 1.0
         design_key = {k_: v_ * dsc for k_, v_ in design_key.items()}; appr_key = {k_: v_ * asc for k_, v_ in appr_key.items()}
         design_key['E1010'] += 2.0   # survey incl. permit follow-up, % of the MS2 bucket
         KEYS = []
-        if sid == 'NSR-RYD':
-            for n, w in poc_sub.items(): KEYS.append((n, 'MS2', w / 100.0, f'POC key {w}% of the engineering-submittal milestone (no separate POC item in Annex 3; carved from the design and engineering package)', 'Annex 3 Design and engineering package (railway) allocated by station hardware share'))
-            for n, w in poc_apr.items(): KEYS.append((n, 'MS3', w / 100.0, f'POC key {w}% of the SAR-approval milestone (carved from the design and engineering package)', 'Annex 3 Design and engineering package (railway) allocated by station hardware share'))
         for n, w in design_key.items(): KEYS.append((n, 'MS2', w / 100.0, f'Design stage key {w}% of the engineering-submittal milestone', 'Annex 3 Design and engineering package (railway) allocated by station hardware share'))
         for n, w in appr_key.items(): KEYS.append((n, 'MS3', w / 100.0, f'Design stage key {w}% of the SAR-approval milestone', 'Annex 3 Design and engineering package (railway) allocated by station hardware share'))
         names_pk = {'P1010': ('A1 CCTV system', s['hw']['cctv']), 'P1020': ('A2 Video management and wall', s['hw']['vms']), 'P1030': ('A3 Access control and intercom', s['hw']['ac']), 'P1040': ('A4 UPS + A5 poles, cabinets and network', s['hw']['ups'] + s['hw']['net'])}
@@ -193,11 +170,7 @@ def build(k_stretch=1.0, buffer_days=20):
         # progress (percent of the whole project)
         stn_pct = 96.0 * f
         E_stage = {'SRV': (8, 'E1010', 'E1020'), 'CNC': (10, 'E1030', 'E1040'), 'PRE': (18, 'E1050', 'E1060'), 'DET': (30, 'E1070', 'E1080'), 'IFC': (18, 'E1090', 'E1100'), 'HCS': (6, 'E1110', 'E1120'), 'ASB': (10, 'E1130', 'E1140')}
-        e_scale = (0.90 if sid == 'NSR-RYD' else 1.0) * 0.98
-        if sid == 'NSR-RYD':
-            pocs = [f'{c}-{n}' for n in ('POC1010', 'POC1020', 'POC2010', 'POC2020', 'POC2030', 'POC3010', 'POC3020', 'POC4010', 'POC4020')]
-            pd_ = sum(ACTS[x].dur for x in pocs)
-            for x in pocs: ACTS[x].prog = stn_pct * 12.0 * 0.10 / 100.0 * ACTS[x].dur / pd_
+        e_scale = 0.98
         for sc, (w, sub, apr) in E_stage.items():
             tot_w = 12.0 * e_scale * w / 100.0
             ds, da = ACTS[f'{c}-{sub}'].dur, ACTS[f'{c}-{apr}'].dur
@@ -211,7 +184,7 @@ def build(k_stretch=1.0, buffer_days=20):
     pstn = [s_ for s_ in ST.values() if s_['prio']]
     ACTS['PRJ-A2010'].preds = [(f'{s_["code"]}-E1010', 'FS', 0) for s_ in pstn]
     ACTS['PRJ-M1150'].preds += [('PRJ-A1060', 'FS', 0)]
-    ACTS['PRJ-M1250'].preds = [(f'{s_["code"]}-{n}', 'FS', 0) for s_ in pstn for n in ('E1100', 'E1120')] + [(f'{ST["NSR-RYD"]["code"]}-POC4100', 'FS', 0)]
+    ACTS['PRJ-M1250'].preds = [(f'{s_["code"]}-{n}', 'FS', 0) for s_ in pstn for n in ('E1100', 'E1120')]
     ACTS['PRJ-C1010'].preds = [(a, 'FS', 0) for a in accepted]
     return surveys, accepted
 

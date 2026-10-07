@@ -31,7 +31,7 @@ inv_events = []
 for sid, s in ST.items():
     code = s['code']; mine = [c for c, a in ACTS.items() if a.codes.get('STN') == code]
     ph = {}
-    for p_ in ('MOB', 'DES', 'POC', 'ENA', 'PRO', 'CON', 'COM'):
+    for p_ in ('MOB', 'DES', 'ENA', 'PRO', 'CON', 'COM'):
         cs = [c for c in mine if ACTS[c].codes.get('PHASE') == p_ and ACTS[c].typ == 'TT_Task']
         if cs: ph[p_] = [iso(min(ES[c] for c in cs)), iso(max(EF[c] for c in cs))]
     invs = []
@@ -69,7 +69,7 @@ out = dict(
               m2=iso(M2_IDX), m6=iso(M6_IDX), ena=iso(ENA_IDX), approvals=dict(stages_ap)),
     months=months, wbs=[dict(c=w['code'], n=w['name'], l=w['level'], p=w['parent']) for w in WBS.values()], acts=acts, stations=stations, inv_m=inv_m, ms_def={k_: dict(n=v[0], p=v[1]) for k_, v in MS.items()},
     prj=dict(cc=curve(prj, 'c'), pc=curve(prj, 'p')),
-    key=dict(m1100=iso(EF['PRJ-M1100']), m1150=iso(EF['PRJ-M1150']), m2100=iso(EF['PRJ-M2100']), m1250=iso(EF['PRJ-M1250']), mx99=iso(EF['PRJ-MX99']), poc=iso(EF['NRY-POC4100'])),
+    key=dict(m1100=iso(EF['PRJ-M1100']), m1150=iso(EF['PRJ-M1150']), m2100=iso(EF['PRJ-M2100']), m1250=iso(EF['PRJ-M1250']), mx99=iso(EF['PRJ-MX99'])),
     events=[dict(c=e[0], l=e[1], ms=e[2], d=e[3], a=e[4]) for e in inv_events],
     line_val={l: round(sum(s_['val'] for s_ in ST.values() if s_['line']==l)) for l in ('NSR','EWR','HHR')},
     holidays=[[a.isoformat(), b.isoformat(), l] for a, b, l in HOLIDAYS])
