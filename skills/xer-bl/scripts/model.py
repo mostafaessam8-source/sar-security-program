@@ -72,7 +72,7 @@ def build(k_stretch=1.0, buffer_days=20):
         A('E1010', 'Survey: submittal of site survey and as-found report', f'{eng}.SRV.SUB', p['sv'], [], RESP='ETECHS', STAGE='Survey', SUBAPP='Submittal', **ENGK)
         A('E1020', 'Survey: SAR approval of survey report', f'{eng}.SRV.APR', p['appr'], [('E1010', 'FS', 0)], RESP='SAR', STAGE='Survey', SUBAPP='Approval', **ENGK)
         A('E1030', 'Concept design: submittal', f'{eng}.CNC.SUB', c1, ([('E1020', 'FS', 0), ('PRJ-M1150', 'FS', 0)] if prio else [('E1010', 'FS', 0)]), RESP='ETECHS', STAGE='Concept', SUBAPP='Submittal', **ENGK)
-        A('E1040', 'Concept design: SAR review and approval', f'{eng}.CNC.APR', p['appr'], [('E1030', 'FS', 0)], RESP='SAR', STAGE='Concept', SUBAPP='Approval', **ENGK)
+        A('E1040', 'Concept design: SAR review and approval' + (' (one month)' if sid == 'NSR-RYD' else ''), f'{eng}.CNC.APR', 22 if sid == 'NSR-RYD' else p['appr'], [('E1030', 'FS', 0)], RESP='SAR', STAGE='Concept', SUBAPP='Approval', **ENGK)
         A('E1050', 'Preliminary design: submittal', f'{eng}.PRE.SUB', p1, [('E1030', 'FS', 0)], RESP='ETECHS', STAGE='Preliminary', SUBAPP='Submittal', **ENGK)
         A('E1060', 'Preliminary design: SAR review and approval', f'{eng}.PRE.APR', p['appr'], [('E1050', 'FS', 0)], RESP='SAR', STAGE='Preliminary', SUBAPP='Approval', **ENGK)
         A('E1070', 'Detailed design: submittal (drawings, BOQ, data sheets)', f'{eng}.DET.SUB', d1, [('E1050', 'FS', 0)], RESP='ETECHS', STAGE='Detailed', SUBAPP='Submittal', **ENGK)
