@@ -15,6 +15,7 @@ for code, a in ACTS.items():
     d0 = iso(ES[code]) if t != 'F' else iso(EF[code]); d1 = iso(EF[code]) if t != 'M' else iso(ES[code])
     acts.append(dict(id=code, n=clean(a), t=t, stn=a.codes.get('STN', 'PRJ'), ep=a.codes.get('EPC'), ph=a.codes.get('PHASE'), sg=a.codes.get('STAGE'), sa=a.codes.get('SUBAPP'),
                      rs=a.codes.get('RESP'), ms=a.codes.get('MST'), pr=[f"{p_} {t_}{('+'+str(l_)) if l_ else ''}" for p_, t_, l_ in meta['pred_of'][code]], s=d0, f=d1, d=a.dur, c=a.cost, p=a.pts * 620, fl=LS[code] - ES[code]))
+D0 = json.load(open('/tmp/claude-0/-home-user/0d8cf00c-df50-59d0-89bb-befade0f854d/scratchpad/deck/data.json'))
 stations = []
 STNMAP = {s['code']: s for s in ST.values()}
 ev_suf = {'MS2': 'E1200', 'MS3': 'E1210', 'MS4': 'P1100', 'MS5': 'C2100', 'MS6': 'T1100', 'MS7': 'T3100'}
@@ -38,7 +39,7 @@ for sid, s in ST.items():
         c = f'{code}-{suf}'; amt = round(PO * MS[ms][1] * s['f'])
         invs.append(dict(ms=ms, n=MS[ms][0], d=iso(ES[c] if ACTS[c].typ == 'TT_Mile' else EF[c]), a=amt)); inv_events.append((code, s['line'], ms, invs[-1]['d'], amt))
     stations.append(dict(id=sid, code=code, name=s['name'], line=s['line'], prio=s['prio'], val=round(s['val']), share=s['f'], cams=s['cams'], ph=ph, inv=invs,
-                         start=iso(min(ES[c] for c in mine)), end=iso(max(EF[c] for c in mine)), cost=sum(ACTS[c].cost for c in mine), prog=sum(ACTS[c].pts for c in mine) * 620,
+                         hw=s['hw'], sh={k:round(v) for k,v in s['shared'].items()}, camt=D0['camSt'][sid], start=iso(min(ES[c] for c in mine)), end=iso(max(EF[c] for c in mine)), cost=sum(ACTS[c].cost for c in mine), prog=sum(ACTS[c].pts for c in mine) * 620,
                          cc=curve(mine, 'c'), pc=curve(mine, 'p')))
 prj = [c for c, a in ACTS.items() if a.codes.get('STN', 'PRJ') == 'PRJ']
 prj_ph = {'MOB': [iso(ES['PRJ-A1010']), iso(EF['PRJ-M1150'])]}
@@ -70,6 +71,7 @@ out = dict(
     prj=dict(cc=curve(prj, 'c'), pc=curve(prj, 'p')),
     key=dict(m1100=iso(EF['PRJ-M1100']), m1150=iso(EF['PRJ-M1150']), m2100=iso(EF['PRJ-M2100']), m1250=iso(EF['PRJ-M1250']), mx99=iso(EF['PRJ-MX99']), poc=iso(EF['NRY-POC4100'])),
     events=[dict(c=e[0], l=e[1], ms=e[2], d=e[3], a=e[4]) for e in inv_events],
+    line_val={l: round(sum(s_['val'] for s_ in ST.values() if s_['line']==l)) for l in ('NSR','EWR','HHR')},
     holidays=[[a.isoformat(), b.isoformat(), l] for a, b, l in HOLIDAYS])
 json.dump(out, open('pres_data.json', 'w'), separators=(',', ':'))
 print('ok', len(json.dumps(out)) // 1024, 'KB', out['key'], sum(inv_m['MS1']), sum(sum(v) for v in inv_m.values()))
