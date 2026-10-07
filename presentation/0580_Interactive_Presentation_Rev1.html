@@ -286,7 +286,7 @@ slide('sched',el=>{
     $$('[data-g]',tb).forEach(b=>b.onclick=()=>{SCH.group=b.dataset.g;SCH.flip=new Set();SCH.LV=Math.min(SCH.LV,SCH.group==='wbs'?5:4);render();draw();});
     $('#rst',tb).onclick=()=>{applyPreset('full');render();draw();};$('#fto',tb).onclick=()=>{SCH.open=!SCH.open;render();draw();};
     $$('[data-lv]',tb).forEach(b=>b.onclick=()=>{SCH.LV=+b.dataset.lv;SCH.flip=new Set();render();draw();});
-    $('#xa',tb).onclick=()=>{SCH.LV=99;SCH.flip=new Set();render();draw();};$('#ca',tb).onclick=()=>{SCH.LV=1;SCH.flip=new Set();render();draw();};
+    $('#xa',tb).onclick=()=>{SCH.pay={all:true,open:new Set()};SCH.LV=99;SCH.flip=new Set();render();draw();};$('#ca',tb).onclick=()=>{SCH.pay={all:false,open:new Set()};SCH.LV=1;SCH.flip=new Set();render();draw();};
     $('#cl',tb).onchange=e=>{SCH.cols=e.target.value;draw();};$$('[data-dt]',tb).forEach(b=>b.onclick=()=>{SCH.detail=b.dataset.dt;render();draw();});
     $('#rf',tb).onchange=e=>{f.from=+e.target.value;if(f.to<=f.from)f.to=f.from+1;render();draw();};$('#rt',tb).onchange=e=>{f.to=+e.target.value;if(f.to<=f.from)f.from=f.to-1;render();draw();};
     $$('[data-zm]',tb).forEach(b=>b.onclick=()=>{f.from=0;f.to=+b.dataset.zm;render();draw();});
@@ -336,9 +336,17 @@ slide('sched',el=>{
     $$('[data-me]',sc).forEach(b=>b.onclick=()=>{SCH.metric=b.dataset.me;drawProg(sc);});
     $$('tr[data-m]',sc).forEach(r=>r.onclick=()=>{const i=+r.dataset.m;drawer(mFull(i),'Cumulative progress at the end of the month',tbl(['Station','Cost progress','Time progress'],sel.map(s=>{let c=0,p=0;for(let k=0;k<=i;k++){c+=s.cc[k];p+=s.pc[k];}return `<tr class="rc" data-st="${s.code}"><td>${esc(s.name)} ${lt(s.line)}</td><td>${fP(c/s.cost)}</td><td>${fP(p/s.prog)}</td></tr>`;})));});
     $('#pcsv',sc).onclick=()=>saveText('Month,Cost in month SAR,Cost progress cumulative %,Time progress in month %,Time progress cumulative %\n'+cs.map((v,i)=>[mFull(i),v,(cc[i]/tc*100).toFixed(2),(ps[i]/tp*100).toFixed(2),(pp[i]/tp*100).toFixed(2)].join(',')).join('\n'),M.no+'_progress_curves.csv','text/csv');}
-  function drawPay(sc){const sel=new Set(selStations().map(s=>s.code));const ev=DATA.events.filter(e=>e.c==='PRJ'?SCH.F.lines.has('PRJ'):sel.has(e.c)).sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0);let cum=0;const tot=ev.reduce((a,e)=>a+e.a,0);
-    const mT={},mN={};ev.forEach(e=>{const k=e.d.slice(0,7);mT[k]=(mT[k]||0)+e.a;mN[k]=(mN[k]||0)+1;});let pk='',cm=0;
-    sc.innerHTML=`<div style="padding:8px"><p class="dn" style="margin:0 0 6px">Each payment milestone is invoiced when its milestone activity is achieved (clause 15). ${ev.length} invoices, SAR ${fN(tot)}. Click a row for the milestone activity.</p>${tbl(['Date','Milestone','Station','Invoice (SAR)','Cumulative (SAR)'],ev.map(e=>{cum+=e.a;const k=e.d.slice(0,7);let hd='';if(k!==pk){pk=k;cm+=mT[k];hd=`<tr style="background:${C.t10};font-weight:700;color:${C.blue}"><td colspan="3" style="text-align:left">M${monIdx(e.d)+1} · ${fD(e.d).slice(3)} · ${mN[k]} invoice${mN[k]>1?'s':''}</td><td>${fN(mT[k])}</td><td>${fN(cm)}</td></tr>`;}return hd+`<tr class="rc" data-e="${e.c}|${e.ms}"><td>${fD(e.d)}</td><td style="text-align:left">${e.ms} ${DATA.ms_def[e.ms].n}</td><td style="text-align:left">${e.c==='PRJ'?'All stations':esc(SBY[e.c].name)}</td><td>${fN(e.a)}</td><td>${fN(cum)}</td></tr>`;}).concat([`<tr class="tot"><td>Total</td><td></td><td></td><td>${fN(tot)}</td><td></td></tr>`]))}</div>`;
+  function drawPay(sc){const sel=new Set(selStations().map(s=>s.code));const ev=DATA.events.filter(e=>e.c==='PRJ'?SCH.F.lines.has('PRJ'):sel.has(e.c)).sort((a,b)=>a.d<b.d?-1:a.d>b.d?1:0);const tot=ev.reduce((a,e)=>a+e.a,0);
+    const P=SCH.pay||(SCH.pay={all:false,open:new Set()});const isO=k=>P.all||P.open.has(k);
+    const mo=new Map();ev.forEach(e=>{const k=e.d.slice(0,7);if(!mo.has(k))mo.set(k,{k,d:e.d,a:0,n:0,ms:new Map()});const m=mo.get(k);m.a+=e.a;m.n++;if(!m.ms.has(e.ms))m.ms.set(e.ms,{a:0,n:0,l:[]});const g=m.ms.get(e.ms);g.a+=e.a;g.n++;g.l.push(e);});
+    let cum=0,rows=[];
+    mo.forEach(m=>{cum+=m.a;const mk='m|'+m.k,op=isO(mk);
+      rows.push(`<tr data-t="${mk}" style="background:${C.t10};font-weight:700;color:${C.blue};cursor:pointer"><td colspan="3" style="text-align:left">${op?'▾':'▸'} M${monIdx(m.d)+1} · ${fD(m.d).slice(3)} · ${m.n} invoice${m.n>1?'s':''}</td><td>${fN(m.a)}</td><td>${fN(cum)}</td></tr>`);
+      if(op)m.ms.forEach((g,ms)=>{const gk='g|'+m.k+'|'+ms,go2=isO(gk);
+        rows.push(`<tr data-t="${gk}" style="font-weight:700;cursor:pointer;background:#F5F8F9"><td></td><td colspan="2" style="text-align:left">${go2?'▾':'▸'} ${ms} ${DATA.ms_def[ms].n} · ${g.n} invoice${g.n>1?'s':''}</td><td>${fN(g.a)}</td><td></td></tr>`);
+        if(go2)g.l.forEach(e=>rows.push(`<tr class="rc" data-e="${e.c}|${e.ms}"><td>${fD(e.d)}</td><td style="text-align:left;padding-left:22px">${e.ms}</td><td style="text-align:left">${e.c==='PRJ'?'All stations':esc(SBY[e.c].name)}</td><td>${fN(e.a)}</td><td></td></tr>`));});});
+    sc.innerHTML=`<div style="padding:8px"><p class="dn" style="margin:0 0 6px">Each payment milestone is invoiced when its milestone activity is achieved (clause 15). ${ev.length} invoices, SAR ${fN(tot)}. Click a month or milestone to expand it; click an invoice for the milestone activity.</p>${tbl(['Date','Milestone','Station','Invoice (SAR)','Cumulative (SAR)'],rows.concat([`<tr class="tot"><td>Total</td><td></td><td></td><td>${fN(tot)}</td><td></td></tr>`]))}</div>`;
+    $$('tr[data-t]',sc).forEach(r=>r.onclick=()=>{const k=r.dataset.t;if(P.all){P.all=false;P.open=new Set();}P.open.has(k)?P.open.delete(k):P.open.add(k);drawPay(sc);});
     const SUF={MS2:'E1200',MS3:'E1210',MS4:'P1100',MS5:'C2100',MS6:'T1100',MS7:'T3100'};
     $$('tr[data-e]',sc).forEach(r=>{r.onclick=()=>{const[c,ms]=r.dataset.e.split('|');const a=c==='PRJ'?ABY['PRJ-M1100']:ABY[c+'-'+SUF[ms]];actDrawer(a);};});}
   render();draw();
