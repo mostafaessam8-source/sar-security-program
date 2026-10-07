@@ -71,7 +71,7 @@ def build(k_stretch=1.0, buffer_days=20):
         ENGK = dict(EPC='ENG', DISC='DOCS')
         A('E1010', 'Survey: submittal of site survey and as-found report', f'{eng}.SRV.SUB', p['sv'], [], RESP='ETECHS', STAGE='Survey', SUBAPP='Submittal', **ENGK)
         A('E1020', 'Survey: SAR approval of survey report', f'{eng}.SRV.APR', p['appr'], [('E1010', 'FS', 0)], RESP='SAR', STAGE='Survey', SUBAPP='Approval', **ENGK)
-        A('E1030', 'Concept design: submittal', f'{eng}.CNC.SUB', c1, ([('E1020', 'FS', 0), ('PRJ-M1150', 'FS', 0)] if prio else [('E1010', 'FS', 0)]), RESP='ETECHS', STAGE='Concept', SUBAPP='Submittal', **ENGK)
+        A('E1030', 'Concept design: submittal', f'{eng}.CNC.SUB', c1, ([('E1020', 'FS', 0), ('PRJ-M1150', 'FS', 0)] if prio else [('E1020', 'FS', 0), ('E1010', 'SS', 43)]), RESP='ETECHS', STAGE='Concept', SUBAPP='Submittal', **ENGK)
         A('E1040', 'Concept design: SAR review and approval', f'{eng}.CNC.APR', p['appr'], [('E1030', 'FS', 0)], RESP='SAR', STAGE='Concept', SUBAPP='Approval', **ENGK)
         A('E1050', 'Preliminary design: submittal', f'{eng}.PRE.SUB', p1, [('E1030', 'FS', 0)], RESP='ETECHS', STAGE='Preliminary', SUBAPP='Submittal', **ENGK)
         A('E1060', 'Preliminary design: SAR review and approval', f'{eng}.PRE.APR', p['appr'], [('E1050', 'FS', 0)], RESP='SAR', STAGE='Preliminary', SUBAPP='Approval', **ENGK)
@@ -106,7 +106,7 @@ def build(k_stretch=1.0, buffer_days=20):
         # enabling works: priority stations start in month 5 (last two months of design); others after MS3
         XK = dict(EPC='CON', STAGE='-', SUBAPP='-', RESP='ETECHS', DISC='CIVIL')
         x1, x2 = (10, 15) if prio == 1 else (5, 10)
-        xp = [('PRJ-M1150', 'FS', ENA_IDX - (M2_IDX + 1))] if prio == 1 else [('E1210', 'FS', 0)]
+        xp = [('PRJ-M1150', 'FS', ENA_IDX - (M2_IDX + 1))] if prio == 1 else ([('E1030', 'SS', 40)] if prio == 2 else [('E1030', 'SS', 42)])
         A('X1010', 'Enabling works: site preparation, setting out, temporary works and utilities clearance', f'{con}.ENA', x1, xp, **XK)
         A('X1020', 'Enabling works: cable routes, duct-bank and cabinet plinth preparation', f'{con}.ENA', x2, [('X1010', 'FS', 0)], **XK)
         # procurement

@@ -91,7 +91,7 @@ for s in ST.values(): s['f'] = s['val'] / TOTAL
 def stn_params(s):
     big = s['big']
     E = 50 if big else 30
-    if s['prio'] == 1: E = DESIGN_E_P1
+    E = DESIGN_E_P1           # four-month design for every station
     return dict(sv=20 if big else 10, E=E, appr=REVIEW_WD, proc=70 if s['ryd'] else (100 if big else 80),
                 ship=40 if big else 30, civil=s['civil_w'] * 5, inst=0, sat=25 if big else 15, train=10, trial=30,
                 final=15)

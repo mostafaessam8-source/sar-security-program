@@ -9,7 +9,7 @@
 | ../presentation/0580_Interactive_Presentation_Rev1.html | Interactive offline presentation and dashboard (open in any browser) |
 
 ## What changed in Rev 1
-- First six months: months 1-2 mobilization and site survey (milestone PRJ-M1150), months 3-6 design (milestone PRJ-M1250). Enabling works of the priority stations start at the start of month 5, overlapping the last two months of design.
+- Design rule for every station: two months of mobilization and survey, then four months of design starting two months after the station mobilization starts, with enabling works starting two months before the end of design (two months of overlap). At the priority stations this is project months 1-2, 3-6 and 5-6 (milestones PRJ-M1150 and PRJ-M1250). Other stations apply the same rule from their own start (survey start plus 43 working days; enabling works 42 working days after design starts).
 - Priority 1: Makkah and Riyadh (Thumamah). Priority 2: Riyadh (Malaz). Priority 1 works run in parallel with design.
 - POC at Riyadh (Thumamah): CCTV, inspection and access control, network; one month (22 working days) for consultant inspection and approval. POC approval is a predecessor of MS3 at that station.
 - Every SAR review is 21 days = 15 working days (survey approval was 5 days), except the POC inspection and approval and the mock-up approval, which are one month (22 working days).
