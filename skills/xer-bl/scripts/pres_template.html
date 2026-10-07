@@ -195,15 +195,16 @@ slide('scope1',el=>{
 const EPCN={MOB:'Mobilization',ENG:'Engineering',PRO:'Procurement',CON:'Construction',COM:'Commissioning and handover',PMG:'Project management',MS:'Milestones'};
 const RESPN=['ETECHS','SAR','SAR/HCIS','Vendor'];
 const SCH={detail:'sum',open:false,view:'sched',group:'stn',LV:2,flip:new Set(),cols:'none',metric:'time',F:null};
-function defF(){return {lines:new Set(['NSR','EWR','HHR','PRJ']),prios:new Set([1,2,0]),stns:new Set(ST.map(s=>s.code)),epc:new Set(Object.keys(EPCN)),ph:new Set(Object.keys(PH)),resp:new Set(RESPN),type:new Set(['T','M','SUB','APR']),fl:null,from:0,to:36,q:''};}
+const PH5={MOB:'Mobilization',DES:'Engineering (design)',PRO:'Procurement',CON:'Construction',COM:'Testing'},P5={MOB:'MOB',DES:'DES',POC:'CON',ENA:'CON',PRO:'PRO',CON:'CON',COM:'COM'};
+function defF(){return {lines:new Set(['NSR','EWR','HHR','PRJ']),prios:new Set([1,2,0]),stns:new Set(ST.map(s=>s.code)),epc:new Set(Object.keys(EPCN)),ph:new Set(Object.keys(PH5)),resp:new Set(RESPN),type:new Set(['T','M','SUB','APR']),fl:null,from:0,to:36,q:''};}
 SCH.F=defF();
 const QV=[['full','Full programme'],['six','First six months (priority)'],['p1','Priority 1 stations'],['ena','Enabling works overlap'],['poc','POC: Riyadh (Thumamah)'],['rev','SAR reviews (21 days)'],['ms','Milestones only'],['crit','Longest path (float up to 30 days)'],['oth','Other stations (waves)']];
 function applyPreset(n){const F=SCH.F=defF();SCH.detail='sum';SCH.flip=new Set();SCH.group='stn';SCH.LV=2;SCH.view='sched';SCH.cols=n==='full'?'none':'dates';
   const proj=()=>F.lines.delete('PRJ');
   if(n==='six'){F.to=8;F.prios=new Set([1,2]);F.stns=new Set(ST.filter(s=>s.prio).map(s=>s.code));SCH.group='stn';SCH.LV=3;}
   else if(n==='p1'){F.prios=new Set([1]);F.stns=new Set(ST.filter(s=>s.prio===1).map(s=>s.code));proj();SCH.group='stn';SCH.LV=4;}
-  else if(n==='ena'){F.ph=new Set(['ENA','DES']);F.prios=new Set([1,2]);F.stns=new Set(ST.filter(s=>s.prio).map(s=>s.code));F.to=12;proj();SCH.group='stn';SCH.LV=4;}
-  else if(n==='poc'){F.stns=new Set(['NRY']);F.ph=new Set(['POC']);proj();SCH.group='stn';SCH.LV=99;SCH.detail='full';}
+  else if(n==='ena'){F.ph=new Set(['CON','DES']);F.prios=new Set([1,2]);F.stns=new Set(ST.filter(s=>s.prio).map(s=>s.code));F.to=12;proj();SCH.group='stn';SCH.LV=4;}
+  else if(n==='poc'){F.stns=new Set(['NRY']);F.ph=new Set(['CON']);proj();SCH.group='stn';SCH.LV=99;SCH.detail='full';}
   else if(n==='rev'){F.type=new Set(['APR']);F.to=12;SCH.group='stn';SCH.LV=99;SCH.detail='full';}
   else if(n==='ms'){F.type=new Set(['M']);SCH.group='stn';SCH.LV=99;}
   else if(n==='crit'){F.fl=30;SCH.group='stn';SCH.LV=4;}
@@ -214,7 +215,7 @@ function openStation(code){applyPreset('full');const F=SCH.F;F.stns=new Set([cod
 const winISO=()=>[addM(M.ntp,SCH.F.from),addM(M.ntp,SCH.F.to)];
 function passAct(a){const F=SCH.F;const s=a.stn==='PRJ'?null:SBY[a.stn];
   if(s){if(!F.lines.has(s.line)||!F.prios.has(s.prio)||!F.stns.has(s.code))return false;}else if(!F.lines.has('PRJ'))return false;
-  if(!F.epc.has(a.ep)||!F.ph.has(a.ph)||!F.resp.has(a.rs))return false;
+  if((P5[a.ph]&&!F.ph.has(P5[a.ph]))||!F.resp.has(a.rs))return false;
   const t=(F.type.has('T')&&a.t==='T')||(F.type.has('M')&&a.t!=='T')||(F.type.has('SUB')&&a.sa==='Submittal')||(F.type.has('APR')&&a.sa==='Approval');if(!t)return false;
   if(F.fl!=null&&a.fl>F.fl)return false;const[w0,w1]=winISO();if(a.f<w0||a.s>=w1)return false;
   if(F.q){const q=F.q.toLowerCase();if(!(a.name_l||(a.name_l=(a.n+' '+a.id+' '+(s?s.name:'project')).toLowerCase())).includes(q))return false;}return true;}
@@ -252,10 +253,10 @@ slide('sched',el=>{
   h+=E(.85,1.45,11.75,5.45,'<div id="tb"></div><div class="scr" id="sc" style="flex:1;min-height:0;margin-top:6px;border:1px solid '+C.gray+'"></div>','','z-index:30;display:flex;flex-direction:column');
   el.innerHTML=h;
   const tb=$('#tb',el);
-  const optsL=[['NSR','NSR'],['EWR','EWR'],['HHR','HHR'],['PRJ','Project level']],optsP=[[1,'Priority 1'],[2,'Priority 2'],[0,'Other stations']],optsS=ST.map(s=>[s.code,s.name+' ('+s.line+')']),optsE=Object.entries(EPCN),optsH=Object.entries(PH).map(([k,v])=>[k,v[0]]),optsR=RESPN.map(r=>[r,r]),optsT=[['T','Tasks'],['M','Milestones'],['SUB','Submittals'],['APR','Approvals (SAR reviews)']];
+  const optsL=[['NSR','NSR'],['EWR','EWR'],['HHR','HHR'],['PRJ','Project level']],optsP=[[1,'Priority 1'],[2,'Priority 2'],[0,'Other stations']],optsS=ST.map(s=>[s.code,s.name+' ('+s.line+')']),optsE=Object.entries(EPCN),optsH=Object.entries(PH5),optsR=RESPN.map(r=>[r,r]),optsT=[['T','Tasks'],['M','Milestones'],['SUB','Submittals'],['APR','Approvals (SAR reviews)']];
   const mons=Array.from({length:37},(_,i)=>i);
   const render=()=>{
-    const f=SCH.F;const cnt=(set,all)=>set.size<all?`<span class="bd">${set.size}</span>`:'';const nAct=(f.lines.size<4)+(f.prios.size<3)+(f.stns.size<14)+(f.epc.size<Object.keys(EPCN).length)+(f.ph.size<Object.keys(PH).length)+(f.resp.size<4)+(f.type.size<4)+(f.fl!=null)+(f.from!==0||f.to!==36)+(!!f.q);
+    const f=SCH.F;const cnt=(set,all)=>set.size<all?`<span class="bd">${set.size}</span>`:'';const nAct=(f.lines.size<4)+(f.prios.size<3)+(f.stns.size<14)+(f.ph.size<5)+(f.resp.size<4)+(f.type.size<4)+(f.fl!=null)+(f.from!==0||f.to!==36)+(!!f.q);
     tb.innerHTML=`<div class="tr"><div class="tabs2">${[['sched','Schedule'],['prog','Progress curves'],['pay','Payments and milestones']].map(([k,t])=>`<button data-vw="${k}" class="${SCH.view===k?'on':''}">${t}</button>`).join('')}</div>
       <select id="qv" style="width:150px"><option value="">Quick views…</option>${QV.map(q=>`<option value="${q[0]}">${q[1]}</option>`).join('')}</select>
       <span class="sg"><b>Group by</b><button data-g="wbs" class="chip ${SCH.group==='wbs'?'on':''}">WBS (EPC)</button><button data-g="stn" class="chip ${SCH.group==='stn'?'on':''}">Package and station</button></span>
@@ -265,7 +266,7 @@ slide('sched',el=>{
       <span class="sg"><b>Columns</b><select id="cl" style="width:104px"><option value="dates" ${SCH.cols==='dates'?'selected':''}>Dates</option><option value="cost" ${SCH.cols==='cost'?'selected':''}>Cost</option><option value="none" ${SCH.cols==='none'?'selected':''}>None</option></select></span>
       <span class="sg"><b>Detail</b><button data-dt="sum" class="chip ${SCH.detail==='sum'?'on':''}">Summary</button><button data-dt="full" class="chip ${SCH.detail==='full'?'on':''}">All activities</button></span><span class="sg"><b>Months</b><select id="rf" style="width:92px">${mons.slice(0,36).map(i=>`<option value="${i}" ${f.from===i?'selected':''}>${i+1} · ${mLab(i)}</option>`).join('')}</select><span>to</span><select id="rt" style="width:92px">${mons.slice(1).map(i=>`<option value="${i}" ${f.to===i?'selected':''}>${i} · ${mLab(i-1)}</option>`).join('')}</select></span>
       <span class="sg">${[[6,'6 m'],[12,'12 m'],[24,'24 m'],[36,'36 m']].map(([n,t])=>`<button data-zm="${n}" class="chip ${f.from===0&&f.to===n?'on':''}">${t}</button>`).join('')}</span></div>
-    <div class="tr"><button class="chip ms" data-m="lines">Railway ${cnt(f.lines,4)} ▾</button><button class="chip ms" data-m="prios">Priority ${cnt(f.prios,3)} ▾</button><button class="chip ms" data-m="stns">Stations ${cnt(f.stns,14)} ▾</button><button class="chip ms" data-m="epc">EPC phase ${cnt(f.epc,Object.keys(EPCN).length)} ▾</button><button class="chip ms" data-m="ph">Programme phase ${cnt(f.ph,Object.keys(PH).length)} ▾</button><button class="chip ms" data-m="resp">Responsible ${cnt(f.resp,4)} ▾</button><button class="chip ms" data-m="type">Type ${cnt(f.type,4)} ▾</button>
+    <div class="tr"><button class="chip ms" data-m="lines">Railway ${cnt(f.lines,4)} ▾</button><button class="chip ms" data-m="prios">Priority ${cnt(f.prios,3)} ▾</button><button class="chip ms" data-m="stns">Stations ${cnt(f.stns,14)} ▾</button><button class="chip ms" data-m="ph">Programme phase ${cnt(f.ph,5)} ▾</button><button class="chip ms" data-m="resp">Responsible ${cnt(f.resp,4)} ▾</button><button class="chip ms" data-m="type">Type ${cnt(f.type,4)} ▾</button>
       <select id="fl" style="width:112px"><option value="">Float: any</option>${[[0,'0 days (no float)'],[30,'up to 30 days'],[60,'up to 60 days'],[100,'up to 100 days']].map(([v,t])=>`<option value="${v}" ${f.fl===v?'selected':''}>Float ${t}</option>`).join('')}</select>
       <input type="text" id="q" placeholder="Search" value="${esc(f.q)}" style="width:130px"><span id="cn" class="dn" style="margin-left:auto"></span><button class="chip" id="csv">Export CSV</button></div></div>`;
     $$('[data-vw]',tb).forEach(b=>b.onclick=()=>{SCH.view=b.dataset.vw;render();draw();});
@@ -280,7 +281,7 @@ slide('sched',el=>{
     $('#fl',tb).onchange=e=>{f.fl=e.target.value===''?null:+e.target.value;draw();};
     $('#q',tb).oninput=e=>{f.q=e.target.value.trim();draw();};
     $('#csv',tb).onclick=()=>{const l=AC.filter(passAct).sort((a,b)=>a.s<b.s?-1:1);saveText('ID,Activity,Station,Station code,WBS,Phase,Responsible,Start,Finish,Working days,Cost SAR,Progress value SAR,Float\n'+l.map(a=>[a.id,'"'+a.n.replace(/"/g,'""')+'"','"'+sn(a)+'"',a.stn,a.w,a.ph,a.rs,a.s,a.f,a.d,a.c,a.p,a.fl].join(',')).join('\n'),M.no+'_schedule_filtered.csv','text/csv');};
-    const MS_={lines:['Railway',optsL,['NSR','EWR','HHR','PRJ']],prios:['Priority',optsP,[1,2,0]],stns:['Stations',optsS,ST.map(s=>s.code)],epc:['EPC phase',optsE,Object.keys(EPCN)],ph:['Programme phase',optsH,Object.keys(PH)],resp:['Responsible',optsR,RESPN],type:['Type',optsT,['T','M','SUB','APR']]};
+    const MS_={lines:['Railway',optsL,['NSR','EWR','HHR','PRJ']],prios:['Priority',optsP,[1,2,0]],stns:['Stations',optsS,ST.map(s=>s.code)],ph:['Programme phase',optsH,Object.keys(PH5)],resp:['Responsible',optsR,RESPN],type:['Type',optsT,['T','M','SUB','APR']]};
     $$('[data-m]',tb).forEach(b=>b.onclick=ev=>{ev.stopPropagation();const k=b.dataset.m,m=MS_[k];popMulti(tb,b,m[0],m[1],f[k],m[2],()=>{render();draw();$$('[data-m="'+k+'"]',tb)[0]&&popMulti(tb,$$('[data-m="'+k+'"]',tb)[0],m[0],m[1],f[k],m[2],()=>{render();draw();});});});
   };
   el.addEventListener('click',()=>{const p=$('.pop',tb);if(p)p.remove();});
@@ -302,7 +303,7 @@ slide('sched',el=>{
       const sub=n.id==='prjc'?'rolling per station; 1-year defects liability':n.level===1?n.stns.size+' stations · SAR '+fM(val)+'M':n.id.startsWith('pk:')?n.stns.size+(['pk:NSR','pk:EWR','pk:HHR'].includes(n.id)?' other':'')+(n.stns.size===1?' station':' stations')+' · SAR '+fM(val)+'M':stc?stc.line+' · SAR '+fM(stc.val)+'M · '+n.cnt+' activities':((n.id.includes('|')&&n.stns.size===1?esc(SBY[[...n.stns][0]].name)+' · ':'')+(n.sub?n.sub+' · ':'')+n.cnt+' activities');
       const ms=n.id==='pk:P1'&&n.stns.size?[{d:[...n.stns].map(c=>ABY[c+'-T1100'].s).sort().pop(),t:'SAT complete, priority 1',f:0}]:[];
       rows.push({lv:lvT,big,rh:big?(SCH.LV<=2?48:36):undefined,ind:big?n.level-1:n.level-1,label:`${has?(open?'▾ ':'▸ '):'&nbsp;&nbsp; '}${big?'':`<b style="color:${C.blue};font-size:10.5px">L${n.level}</b> `}${n.label}`,sub,cols:dcol(n),
-        bars:(()=>{const Fh=SCH.F;const narrow=Fh.ph.size<Object.keys(PH).length||Fh.epc.size<Object.keys(EPCN).length||Fh.type.size<4||Fh.fl!=null;if(big&&narrow&&n.id.startsWith('pk:')&&n.segs.size>1){const u=new Map();[...n.segs.values()].forEach(g=>u.set(g[0]+'|'+g[1],g));const sg=[...u.values()].sort((x,y)=>x[0]<y[0]?-1:1);const avg=[...n.segs.values()].reduce((q,g)=>q+(dd(g[1])-dd(g[0]))/864e5/30.4375,0)/n.segs.size;return sg.map((g,i)=>({s:g[0],f:g[1],c:col,dk:col===C.yellow,h:20,l:i===sg.length-1?n.segs.size+' stations, about '+avg.toFixed(1)+' months each':'',t:fD(g[0])+' to '+fD(g[1])}));}return [(()=>{let bs=n.s,bf=n.f;if(n.id==='prjc'){const ends=ST.filter(x=>SCH.F.lines.has(x.line)&&SCH.F.stns.has(x.code)).map(x=>x.end).sort();if(ends.length)bs=ends[0];bf=M.end;}return {s:bs,f:bf,c:big?col:C.black,h:big?20:6,dk:big&&col===C.yellow,l:big?(n.level===1?'NTP at M0, term ends M36':'M'+mFrac(bs).toFixed(1)+' to M'+mFrac(bf).toFixed(1)):'',t:fD(bs)+' to '+fD(bf)};})()];})(),ms,
+        bars:(()=>{const Fh=SCH.F;const narrow=Fh.ph.size<5||Fh.type.size<4||Fh.fl!=null;if(big&&narrow&&n.id.startsWith('pk:')&&n.segs.size>1){const u=new Map();[...n.segs.values()].forEach(g=>u.set(g[0]+'|'+g[1],g));const sg=[...u.values()].sort((x,y)=>x[0]<y[0]?-1:1);const avg=[...n.segs.values()].reduce((q,g)=>q+(dd(g[1])-dd(g[0]))/864e5/30.4375,0)/n.segs.size;return sg.map((g,i)=>({s:g[0],f:g[1],c:col,dk:col===C.yellow,h:20,l:i===sg.length-1?n.segs.size+' stations, about '+avg.toFixed(1)+' months each':'',t:fD(g[0])+' to '+fD(g[1])}));}return [(()=>{let bs=n.s,bf=n.f;if(n.id==='prjc'){const ends=ST.filter(x=>SCH.F.lines.has(x.line)&&SCH.F.stns.has(x.code)).map(x=>x.end).sort();if(ends.length)bs=ends[0];bf=M.end;}return {s:bs,f:bf,c:big?col:C.black,h:big?20:6,dk:big&&col===C.yellow,l:big?(n.level===1?'NTP at M0, term ends M36':'M'+mFrac(bs).toFixed(1)+' to M'+mFrac(bf).toFixed(1)):'',t:fD(bs)+' to '+fD(bf)};})()];})(),ms,
         lclick:has?()=>{if(SCH.flip.has(n.id))SCH.flip.delete(n.id);else SCH.flip.add(n.id);const st=$('#sc',el).scrollTop;draw();$('#sc',el).scrollTop=st;}:null,
         click:()=>{const l=[];const grab=x=>{x.acts.forEach(a=>l.push(a));x.kids.forEach(grab);};grab(n);l.sort((a,b)=>a.s<b.s?-1:1);drawer('L'+n.level+' · '+n.label.replace(/<[^>]+>/g,''),l.length+' activities · '+fD(n.s)+' to '+fD(n.f)+' · cost SAR '+fN(n.c),actTable(l.slice(0,400))+(l.length>400?'<p class="dn">First 400 of '+l.length+' activities; narrow the filters for the rest.</p>':''));}});
       if(open){sortKids(n);n.kids.forEach(walk);leafRows(n);}};
