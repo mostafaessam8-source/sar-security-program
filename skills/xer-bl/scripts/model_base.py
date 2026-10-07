@@ -90,19 +90,21 @@ assert abs(TOTAL - PO) < 5, TOTAL
 for s in ST.values(): s['f'] = s['val'] / TOTAL
 # fixed durations (working days) from the baseline assumptions
 def stn_params(s):
-    big = s['big']
-    E = 50 if big else 30
-    sv_ = 20 if big else 10
-    E = DESIGN_TOTAL_WD - sv_ - REVIEW_WD     # survey + design chain + last review = four months
-    return dict(sv=sv_, E=E, appr=REVIEW_WD, proc=70 if s['ryd'] else (100 if big else 80),
-                ship=40 if big else 30, civil=s['civil_w'] * 5, inst=0, sat=25 if big else 15, train=10, trial=30,
-                final=15)
-inst_weeks = {s['id']: s['acts']['inst'][1] - s['acts']['inst'][0] for s in SRC}
+    """Durations (working days) driven by the BOQ quantities of each station (Annex 3):
+    cams = number of cameras, equipment SAR = CCTV + VMS + access control + UPS + network sections, civil SAR = civil section."""
+    cams = s['cams']; h = s['hw']; eq = h['cctv'] + h['vms'] + h['ac'] + h['ups'] + h['net']; civ = h['civil']
+    crews = 1 if cams < 150 else (2 if cams < 350 else 3)                 # installation crews scale with the camera count
+    sv_ = max(8, round(5 + cams / 30))                                   # survey: 5 days set-up + 30 cameras per day walked and recorded
+    E = DESIGN_TOTAL_WD - sv_ - REVIEW_WD                                # design is fixed at four months, survey included
+    return dict(sv=sv_, E=E, appr=REVIEW_WD,
+                proc=min(100, round(40 + eq / 100000)),                  # lead time: 40 days base + 1 day per SAR 100k of equipment
+                ship=round(20 + eq / 250000),                            # shipping and customs: 20 days + 1 day per SAR 250k
+                civil=round(20 + civ / 12000),                           # civil: 20 days + 1 day per SAR 12k of civil works (per crew)
+                inst=round(15 + cams / (3 * crews)),                     # installation: 15 days + 3 cameras per crew-day
+                sat=round(10 + cams / 30),                               # SAT: 10 days + 30 cameras per day
+                train=10, trial=30, final=15)
 for s in ST.values():
     s['p'] = stn_params(s)
-    # installation window: from the baseline engine (max(is+d_inst, civil end) - is) with min of d_inst
-    d_inst = int(4 + s['cams'] / (35 if s['big'] else 30) + 0.5)
-    s['p']['inst'] = d_inst * 5
 
 # ------------------------------------------------------------------ payment milestones (contract clause 15)
 MS = OrderedDict([
