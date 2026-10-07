@@ -156,7 +156,7 @@ function gantt(host,o){
   if(QH){for(let m=0;m<=o.nM;m+=qM){const l=m/o.nM*100;if(l<100)h+=`<i class="gvl" style="left:${l}%"></i>`;}}else months.forEach((m,i)=>{if(i%step===0){const l=(m-t0)/span*100;if(l>=0&&l<100)h+=`<i class="gvl" style="left:${l}%"></i>`;}});
   (o.bands||[]).forEach(b=>{h+=`<i class="gband" style="left:${pc(b.s)}%;width:${pc(b.f)-pc(b.s)}%;background:${b.c}"></i>`;});
   (o.lines||[]).forEach(b=>{const p=pcr(b.d);if(p>=0&&p<=100)h+=`<i class="gend" style="left:${p}%;border-color:${b.c||C.red}"></i>`;});h+='</div>';
-  o.rows.forEach((r,i)=>{h+=`<div class="gr ${r.lv===0?'lv0':r.lv===1?'lv1':''} ${r.big?'big':''} ${r.click||r.lclick?'c':''}" data-i="${i}" ${r.drag?`data-drag="${r.drag}" data-par="${r.par||''}"`:''} style="${r.rh?'min-height:'+r.rh+'px':''}"><div class="gl" style="padding-left:${8+(r.ind||0)*12}px"><span class="n" title="${esc(r.label.replace(/<[^>]+>/g,''))}">${r.drag?'<span class="grip" title="Drag up or down to reorder the stations">&#8942;&#8942;</span>':''}${r.label}</span>${r.sub?`<small>${r.sub}</small>`:''}</div>${cols.map((c,ci)=>`<div class="gc" style="flex:0 0 ${c.w}px">${(r.cols||[])[ci]||''}</div>`).join('')}<div class="gt">`;
+  o.rows.forEach((r,i)=>{h+=`<div class="gr ${r.lv===0?'lv0':r.lv===1?'lv1':''} ${r.big?'big':''} ${r.click||r.lclick?'c':''}" data-i="${i}" ${r.drag?`data-drag="${r.drag}" data-par="${r.par||''}"`:''} style="${r.rh?'min-height:'+r.rh+'px':''}"><div class="gl" style="padding-left:${8+(r.ind||0)*12}px"><span class="n" title="${esc(r.label.replace(/<[^>]+>/g,''))}">${r.drag?'<span class="grip" title="Drag up or down to set the station order yourself">&#8942;&#8942;</span>':''}${r.label}</span>${r.sub?`<small>${r.sub}</small>`:''}</div>${cols.map((c,ci)=>`<div class="gc" style="flex:0 0 ${c.w}px">${(r.cols||[])[ci]||''}</div>`).join('')}<div class="gt">`;
     (r.bars||[]).forEach(b=>{const l=pcr(b.s),w=Math.max(.35,pcr(b.f)-l+(100*86400000/span)),cl=Math.max(0,l),cw=Math.min(100,l+w)-cl;if(cw<=0)return;const hh=b.h||12,top=b.top!=null?b.top:Math.round(((r.rh||rh)-hh)/2);
       h+=`<i class="gb ${b.dk?'dk':''}" style="left:${cl}%;width:${cw}%;top:${top}px;height:${hh}px;background:${b.c}" title="${esc(b.t||'')}">${b.l&&cw>14?esc(b.l):''}</i>${b.l&&cw<=14?`<span class="gbo" style="left:${cl+cw}%;top:${top}px;height:${hh}px">${esc(b.l)}</span>`:''}`;});
     (r.ms||[]).forEach(m=>{const p=pcr(m.d);if(p<0||p>100)return;h+=`<i class="gd ${m.f?'f':''}" style="left:${p}%;top:${Math.round(((r.rh||rh)-12)/2)}px" title="${esc(m.t||'')}"></i>`;});h+='</div></div>';});
@@ -167,7 +167,7 @@ const lineShare=l=>DATA.line_val[l]/M.po;
 const invByMonthLine=()=>{const o={NSR:Array(36).fill(0),EWR:Array(36).fill(0),HHR:Array(36).fill(0)};DATA.events.forEach(e=>{const i=Math.min(35,monIdx(e.d));if(e.l==='ALL'){['NSR','EWR','HHR'].forEach(l=>o[l][i]+=e.a*lineShare(l));}else o[e.l][i]+=e.a;});return o;};
 
 /* ---------- what-if engine: drag bars, everything recalculates ---------- */
-const OV={};const B0={a:AC.map(a=>({s:a.s,f:a.f,d:a.d})),s:ST.map(s=>({start:s.start,end:s.end,ph:JSON.parse(JSON.stringify(s.ph)),inv:s.inv.map(i=>i.d),cc:s.cc.slice(),pc:s.pc.slice()})),e:DATA.events.map(e=>e.d),im:JSON.parse(JSON.stringify(DATA.inv_m))};
+const OV={};let STORD=null;const freezeOrd=()=>{if(!STORD)STORD=ST.slice().sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:0).map(s=>s.code);};const B0={a:AC.map(a=>({s:a.s,f:a.f,d:a.d})),s:ST.map(s=>({start:s.start,end:s.end,ph:JSON.parse(JSON.stringify(s.ph)),inv:s.inv.map(i=>i.d),cc:s.cc.slice(),pc:s.pc.slice()})),e:DATA.events.map(e=>e.d),im:JSON.parse(JSON.stringify(DATA.inv_m))};
 const HOL=new Set();DATA.holidays.forEach(([a,b])=>{let d=dd(a);const e=dd(b);while(d<=e){HOL.add(d.getTime());d=new Date(d.getTime()+864e5);}});
 const isoD=d=>d.toISOString().slice(0,10),isWD=d=>{const w=d.getUTCDay();return w<=4&&!HOL.has(d.getTime());};
 const snapWD=d=>{let x=new Date(d.getTime());let n=0;while(!isWD(x)&&n++<14)x=new Date(x.getTime()+864e5);return x;};
@@ -192,8 +192,8 @@ function applyScenario(){
   DATA.events.forEach(e=>{DATA.inv_m[e.ms][Math.max(0,Math.min(35,monIdx(e.d)))]+=e.a;});
   SL.forEach((x,i)=>{if(i!==cur)x.done=false;});
 }
-function scnInfo(){const n=Object.keys(OV).length;const last=ST.reduce((m,s)=>s.end>m?s.end:m,'0000');const d=daysBetween(M.end,last);return {n,last,d};}
-function resetScenario(){Object.keys(OV).forEach(k=>delete OV[k]);applyScenario();}
+function scnInfo(){const n=Object.keys(OV).length;const last=ST.reduce((m,s)=>s.end>m?s.end:m,'0000');const d=daysBetween(M.end,last);return {n,last,d,ord:!!STORD};}
+function resetScenario(){STORD=null;Object.keys(OV).forEach(k=>delete OV[k]);applyScenario();}
 function bindDrag(host,after){
   const rows=$$('.gr[data-drag]',host);if(!rows.length)return;const g=host._g;
   rows.forEach(row=>{const code=row.dataset.drag,gt=$('.gt',row);
@@ -205,11 +205,11 @@ function bindDrag(host,after){
         else{const over=document.elementFromPoint(e.clientX,e.clientY);const tr=over&&over.closest&&over.closest('.gr[data-drag]');$$('.gr.dov',host).forEach(x=>x.classList.remove('dov'));row.classList.add('dsrc');if(tr&&tr!==row&&tr.dataset.par===row.dataset.par)tr.classList.add('dov');}};
       const up=e=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);document.body.classList.remove('dgg');window.__dgT=Date.now();tip.remove();
         if(!moved){bars.forEach(b=>{b.style.transform='';b.classList.remove('dmv');});tip.remove();row.classList.remove('dsrc');return;}
-        const o=OV[code]||(OV[code]={shift:0,k:1});
-        if(mode==='h')o.shift+=days;else if(mode==='r')o.k=Math.max(.3,Math.min(3,o.k*k));
+        freezeOrd();
+        if(mode==='h'||mode==='r'){const o=OV[code]||(OV[code]={shift:0,k:1});if(mode==='h')o.shift+=days;else o.k=Math.max(.3,Math.min(3,o.k*k));}
         else{const over=document.elementFromPoint(e.clientX,e.clientY);const tr=over&&over.closest&&over.closest('.gr[data-drag]');
           if(tr&&tr!==row&&tr.dataset.par===row.dataset.par){const sib=[...$$('.gr[data-drag]',host)].filter(x=>x.dataset.par===row.dataset.par).map(x=>x.dataset.drag);const from=sib.indexOf(code),to=sib.indexOf(tr.dataset.drag);sib.splice(from,1);sib.splice(to,0,code);
-            const slots=sib.map(c=>SBY[c].start).sort();sib.forEach((c,i)=>{const cur_=SBY[c].start,dif=daysBetween(cur_,slots[i]);if(dif){const oo=OV[c]||(OV[c]={shift:0,k:1});oo.shift+=dif;}});}}
+            const pos=sib.map(c=>STORD.indexOf(c)).sort((x,y)=>x-y);sib.forEach((c,i)=>{STORD[pos[i]]=c;});}}
         applyScenario();after();};
       addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up);};
     $$('.gb',gt).forEach(b=>{b.addEventListener('pointermove',e=>{if(document.body.classList.contains('dgg'))return;const r=b.getBoundingClientRect();b.classList.toggle('rz',r.right-e.clientX<7&&r.width>24);});
@@ -343,7 +343,7 @@ slide('sched',el=>{
     <div class="tr"><span class="sg"><b>Group by</b><button data-g="wbs" class="chip ${SCH.group==='wbs'?'on':''}">EPC</button><button data-g="stn" class="chip ${SCH.group==='stn'?'on':''}">Line</button><button data-g="sta" class="chip ${SCH.group==='sta'?'on':''}">Station</button></span>
       <button class="chip ms" data-m="stns">Stations ${cnt(f.stns,14)} ▾</button><button class="chip ms" data-m="ph">Programme phase ${cnt(f.ph,5)} ▾</button>
       <button class="chip ${SCH.open?'on':''}" id="fto" style="margin-left:auto">Filters and levels${nAct?`<span class="bd">${nAct}</span>`:''} ${SCH.open?'▴':'▾'}</button><button class="chip" id="rst">Reset</button></div>
-    ${(()=>{const q=scnInfo();return q.n?`<div class="tr" id="scn"><b style="color:#8A6D1F">Scenario</b><span>${q.n} station${q.n>1?'s':''} changed. Last station accepted ${fD(q.last)}${q.d>0?` <b style="color:${C.red}">(${q.d} days after the contract end)</b>`:q.d<0?` (${-q.d} days before the contract end)`:''}. Curves, payments and dashboard follow this scenario.</span><button class="chip" id="scr" style="margin-left:auto">Reset scenario</button></div>`:'';})()}
+    ${(()=>{const q=scnInfo();return q.n||q.ord?`<div class="tr" id="scn"><b style="color:#8A6D1F">Scenario</b><span>${q.ord?'Station order set by you. ':''}${q.n?q.n+' station'+(q.n>1?'s':'')+' changed. ':''}Last station accepted ${fD(q.last)}${q.d>0?` <b style="color:${C.red}">(${q.d} days after the contract end)</b>`:q.d<0?` (${-q.d} days before the contract end)`:''}. Curves, payments and dashboard follow this scenario.</span><button class="chip" id="scr" style="margin-left:auto">Reset scenario</button></div>`:'';})()}
     <div id="more" style="display:${SCH.open?'flex':'none'};flex-direction:column;gap:3px"><div class="tr"><span class="sg"><b>Level</b>${[1,2,3,4,5,6].map(n=>`<button data-lv="${n}" class="chip ${SCH.LV===n||(n===6&&SCH.LV>=6)?'on':''}">${n===6?'Activities':'L'+n}</button>`).join('')}</span>
       <button class="chip" id="xa">Expand</button><button class="chip" id="ca">Collapse</button>
       <span class="sg"><b>Columns</b><select id="cl" style="width:104px"><option value="dates" ${SCH.cols==='dates'?'selected':''}>Dates</option><option value="cost" ${SCH.cols==='cost'?'selected':''}>Cost</option><option value="none" ${SCH.cols==='none'?'selected':''}>None</option></select></span>
@@ -370,7 +370,7 @@ slide('sched',el=>{
   };
   el.addEventListener('click',()=>{const p=$('.pop',tb);if(p)p.remove();});
   function treeRows(acts){const root=buildTree(acts),rows=[];const force=!!SCH.F.q;
-    const sortKids=n=>n.kids.sort((a,b)=>(a.id.endsWith('|MS')?1:0)-(b.id.endsWith('|MS')?1:0)||(a.id.includes('|')&&b.id.includes('|')?a.ord-b.ord:0)||(a.s<b.s?-1:a.s>b.s?1:a.ord-b.ord||(a.label<b.label?-1:1)));
+    const sortKids=n=>n.kids.sort((a,b)=>(a.id.endsWith('|MS')?1:0)-(b.id.endsWith('|MS')?1:0)||(STORD&&a.id.startsWith('st:')&&b.id.startsWith('st:')?STORD.indexOf(a.id.slice(3))-STORD.indexOf(b.id.slice(3)):0)||(a.id.includes('|')&&b.id.includes('|')?a.ord-b.ord:0)||(a.s<b.s?-1:a.s>b.s?1:a.ord-b.ord||(a.label<b.label?-1:1)));
     const dcol=n=>SCH.cols==='dates'?[fD(n.s).slice(0,6)+fD(n.s).slice(-2),fD(n.f).slice(0,6)+fD(n.f).slice(-2),''] :SCH.cols==='cost'?[fN(n.c),fN(n.p)]:[];
     const leafRows=n=>{const A=n.acts.slice().sort((a,b)=>a.s<b.s?-1:a.s>b.s?1:a.id<b.id?-1:1);
       const ar=a=>({lv:2,ind:n.level,label:'<span style="color:'+C.slate+';font-size:10.5px">A</span> '+esc(a.n),sub:(a.stn==='PRJ'?'':esc(sn(a))+' · ')+a.id+(a.t==='T'?' · '+a.d+' d':'')+(a.c>0?' · SAR '+fN(a.c):''),cols:SCH.cols==='dates'?[fD(a.s).slice(0,6)+fD(a.s).slice(-2),a.t==='T'?fD(a.f).slice(0,6)+fD(a.f).slice(-2):'',a.t==='T'?a.d+'':'']:SCH.cols==='cost'?[fN(a.c),fN(a.p)]:[],bars:a.t==='T'?[{s:a.s,f:a.f,c:PH[a.ph]?PH[a.ph][1]:C.slate,dk:PH[a.ph]&&PH[a.ph][2],h:11,t:a.n+' · '+fD(a.s)+' to '+fD(a.f)}]:[],ms:a.t!=='T'?[{d:a.s,f:a.t==='F',t:a.n+' · '+fD(a.s)}]:[],click:()=>actDrawer(a)});
