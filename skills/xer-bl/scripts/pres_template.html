@@ -285,7 +285,7 @@ slide('sched',el=>{
   };
   el.addEventListener('click',()=>{const p=$('.pop',tb);if(p)p.remove();});
   function treeRows(acts){const root=buildTree(acts),rows=[];const force=!!SCH.F.q;
-    const sortKids=n=>n.kids.sort((a,b)=>(a.id.endsWith('|MS')?1:0)-(b.id.endsWith('|MS')?1:0)||(a.s<b.s?-1:a.s>b.s?1:a.ord-b.ord||(a.label<b.label?-1:1)));
+    const sortKids=n=>n.kids.sort((a,b)=>(a.id.endsWith('|MS')?1:0)-(b.id.endsWith('|MS')?1:0)||(a.id.includes('|')&&b.id.includes('|')?a.ord-b.ord:0)||(a.s<b.s?-1:a.s>b.s?1:a.ord-b.ord||(a.label<b.label?-1:1)));
     const dcol=n=>SCH.cols==='dates'?[fD(n.s).slice(0,6)+fD(n.s).slice(-2),fD(n.f).slice(0,6)+fD(n.f).slice(-2),''] :SCH.cols==='cost'?[fN(n.c),fN(n.p)]:[];
     const leafRows=n=>{const A=n.acts.slice().sort((a,b)=>a.s<b.s?-1:a.s>b.s?1:a.id<b.id?-1:1);
       const ar=a=>({lv:2,ind:n.level,label:'<span style="color:'+C.slate+';font-size:10.5px">A</span> '+esc(a.n),sub:(a.stn==='PRJ'?'':esc(sn(a))+' · ')+a.id+(a.t==='T'?' · '+a.d+' d':''),cols:SCH.cols==='dates'?[fD(a.s).slice(0,6)+fD(a.s).slice(-2),a.t==='T'?fD(a.f).slice(0,6)+fD(a.f).slice(-2):'',a.t==='T'?a.d+'':'']:SCH.cols==='cost'?[fN(a.c),fN(a.p)]:[],bars:a.t==='T'?[{s:a.s,f:a.f,c:PH[a.ph]?PH[a.ph][1]:C.slate,dk:PH[a.ph]&&PH[a.ph][2],h:11,t:a.n+' · '+fD(a.s)+' to '+fD(a.f)}]:[],ms:a.t!=='T'?[{d:a.s,f:a.t==='F',t:a.n+' · '+fD(a.s)}]:[],click:()=>actDrawer(a)});
