@@ -40,7 +40,7 @@ def gantt6():
     ax.set_yticks(range(len(rows))); ax.set_yticklabels([r[0] for r in rows][::-1],fontsize=8)
     ax.axvspan(0,2,color='#00778B',alpha=.07); ax.axvspan(2,6,color='#3D3935',alpha=.05); ax.axvspan(4,6,color='#C8C9C7',alpha=.35)
     ax.set_xlim(0,8); ax.set_xticks(range(0,9)); ax.set_xlabel('Months from NTP'); ax.grid(axis='x',alpha=.3)
-    ax.text(1,len(rows)-.35,'Mobilization and survey permit',ha='center',fontsize=8); ax.text(4,len(rows)-.35,'Design (4 months)',ha='center',fontsize=8); ax.text(5,len(rows)-.75,'overlap: enabling works',ha='center',fontsize=7)
+    ax.text(1,len(rows)-.35,'Mobilization and survey permit',ha='center',fontsize=8); ax.text(4,len(rows)-.35,'Design (4 months)',ha='center',fontsize=8); ax.text(5,len(rows)-.75,'enabling after HCIS',ha='center',fontsize=7)
     ax.set_ylim(-.6,len(rows)+.1); plt.tight_layout(); plt.savefig('gantt6.png',dpi=160); plt.close()
 gantt6()
 
@@ -78,7 +78,7 @@ P(f"This narrative describes the baseline programme ({REVISION}) of project {PRO
 P('Source: the contract file only (conditions, Annex 2 scope of work, Annex 3 price table, Annex 4 clarifications, Annex 5 compliance table), plus the planning instructions of the Contractor in this revision. Durations, logic and station sequence are Contractor planning assumptions offered for SAR approval. They are not contract-stated, except the 36 month term, the payment milestones and the 21 day review period.')
 doc.add_heading('2. Changes in this revision',1)
 table([('First six months','Months 1-2 mobilization and the survey access permit (the permit takes two months); months 3-6 design (four months) which starts with the site survey. Milestones: mobilization and permits complete, design complete.'),
-       ('Design rule','At every station: two months of mobilization and survey, then four months of design starting two months after the station mobilization starts; enabling works start in the last two months of design (two months of overlap). At the priority stations this is months 1-2, 3-6 and 5-6 of the project.'),
+       ('Design rule','At every station: two months of mobilization and survey, then four months of design starting two months after the station mobilization starts; enabling works start after the HCIS documents (finish to start) and construction follows the enabling works. At the priority stations this is months 1-2 and 3-6 of the project for permit and design.'),
        ('Priority','Makkah and Riyadh (Thumamah) are Priority 1 and run works in parallel with design. Riyadh (Malaz) is Priority 2.'),
        ('Review period','Every SAR review of a submission is 21 days (15 working days). Survey approval was 5 days and is now 21 days.'),
        ('WBS','Stations are now level 3 of the WBS (project, EPC phase, station). Priority and railway are activity codes.'),
@@ -92,7 +92,7 @@ a1,b1=rng(['PRJ-A1010','PRJ-A1020','PRJ-A1030','PRJ-A1040','PRJ-A1050','PRJ-A106
 a2,b2=rng(['NRY-E1010','NRY-E1100','HMK-E1010','HMK-E1100']); a3,b3=rng(['NRY-X1010','NRY-X1020','HMK-X1010','HMK-X1020'])
 table([('Mobilization and survey permit (months 1-2)',D(a1),D(b1),'Mobilization, initial baseline, and the two month site access permit for the surveys, applied for once for the whole project'),
        ('Design including survey (months 3-6)',D(a2),D(b2),'Site survey, concept, preliminary, detailed and IFC design with HCIS documents; each stage submitted and approved in 21 days'),
-       ('Enabling works start (month 5)',D(a3),D(b3),'Site preparation, setting out, temporary works, cable routes, duct banks and plinths, in parallel with the last two months of design'),
+       ('Enabling works (after the HCIS documents)',D(a3),D(b3),'Site preparation, setting out, temporary works, cable routes, duct banks and plinths, starting when the HCIS documents are approved (finish to start); civil construction follows'),
        ],['Phase','Start','Finish','Content'],[4.5,2.6,2.6,6.3])
 P('The survey needs a site access permit and the permit takes two months, so months 1 and 2 are mobilization and the permit (one project-level activity, PRJ-A1060, in the Mobilization branch of the WBS; there is no permit activity per station). The survey is the first part of design, so the survey and design start when the permit is granted and lasts four months in total, survey included. At the priority stations the two month window is held by milestone PRJ-M1150; the other stations start design in their wave, with the permit already in hand. Enabling works start two months before the end of design, so design and execution overlap by two months. No date constraint is used.')
 doc.add_heading('5. Priority stations',1)

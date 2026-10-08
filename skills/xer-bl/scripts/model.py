@@ -89,7 +89,7 @@ def build(k_stretch=1.0, buffer_days=20):
         # enabling works: priority stations start in month 5 (last two months of design); others after MS3
         XK = dict(EPC='CON', STAGE='-', SUBAPP='-', RESP='ETECHS', DISC='CIVIL')
         x1, x2 = (10, 15) if prio == 1 else (5, 10)
-        xp = [('PRJ-M1150', 'FS', ENA_IDX - (M2_IDX + 1))] if prio == 1 else ([('E1010', 'SS', 40)] if prio == 2 else [('E1010', 'SS', 42)])
+        xp = [('E1120', 'FS', 0)]      # enabling works start after the HCIS documents (finish to start) at every station; construction follows enabling
         A('X1010', 'Enabling works: site preparation, setting out, temporary works and utilities clearance', f'{con}.ENA', x1, xp, **XK)
         A('X1020', 'Enabling works: cable routes, duct-bank and cabinet plinth preparation', f'{con}.ENA', x2, [('X1010', 'FS', 0)], **XK)
         # procurement
