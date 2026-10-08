@@ -5,7 +5,7 @@ def solve0(buffer_days=20):
     # pass 1: find detailed-baseline-approved day
     wave0 = {sid: 0 for sid in ST}
     order, pred_of, ES, EF = cpm(wave0)
-    t_db = EF['PRJ-M2100']
+    t_db = EF['PRJ-M1150']
     best = None
     for k100 in range(50, 200):
         k = k100 / 100.0
