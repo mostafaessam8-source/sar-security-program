@@ -156,59 +156,84 @@ function gantt(host,o){
   if(QH){for(let m=0;m<=o.nM;m+=qM){const l=m/o.nM*100;if(l<100)h+=`<i class="gvl" style="left:${l}%"></i>`;}}else months.forEach((m,i)=>{if(i%step===0){const l=(m-t0)/span*100;if(l>=0&&l<100)h+=`<i class="gvl" style="left:${l}%"></i>`;}});
   (o.bands||[]).forEach(b=>{h+=`<i class="gband" style="left:${pc(b.s)}%;width:${pc(b.f)-pc(b.s)}%;background:${b.c}"></i>`;});
   (o.lines||[]).forEach(b=>{const p=pcr(b.d);if(p>=0&&p<=100)h+=`<i class="gend" style="left:${p}%;border-color:${b.c||C.red}"></i>`;});h+='</div>';
-  o.rows.forEach((r,i)=>{h+=`<div class="gr ${r.lv===0?'lv0':r.lv===1?'lv1':''} ${r.big?'big':''} ${r.click||r.lclick?'c':''}" data-i="${i}" ${r.drag?`data-drag="${r.drag}" data-par="${r.par||''}"`:''} style="${r.rh?'min-height:'+r.rh+'px':''}"><div class="gl" style="padding-left:${8+(r.ind||0)*12}px"><span class="n" title="${esc(r.label.replace(/<[^>]+>/g,''))}">${r.drag?'<span class="grip" title="Drag up or down to set the station order yourself">&#8942;&#8942;</span>':''}${r.label}</span>${r.sub?`<small>${r.sub}</small>`:''}</div>${cols.map((c,ci)=>`<div class="gc" style="flex:0 0 ${c.w}px">${(r.cols||[])[ci]||''}</div>`).join('')}<div class="gt">`;
+  o.rows.forEach((r,i)=>{h+=`<div class="gr ${r.lv===0?'lv0':r.lv===1?'lv1':''} ${r.big?'big':''} ${r.click||r.lclick?'c':''}" data-i="${i}" ${r.dg?`data-dgi="${i}"`:''} ${r.drag?`data-drag="${r.drag}" data-par="${r.par||''}"`:''} style="${r.rh?'min-height:'+r.rh+'px':''}"><div class="gl" style="padding-left:${8+(r.ind||0)*12}px"><span class="n" title="${esc(r.label.replace(/<[^>]+>/g,''))}">${r.drag?'<span class="grip" title="Drag up or down to set the station order yourself">&#8942;&#8942;</span>':''}${r.label}</span>${r.sub?`<small>${r.sub}</small>`:''}</div>${cols.map((c,ci)=>`<div class="gc" style="flex:0 0 ${c.w}px">${(r.cols||[])[ci]||''}</div>`).join('')}<div class="gt">`;
     (r.bars||[]).forEach(b=>{const l=pcr(b.s),w=Math.max(.35,pcr(b.f)-l+(100*86400000/span)),cl=Math.max(0,l),cw=Math.min(100,l+w)-cl;if(cw<=0)return;const hh=b.h||12,top=b.top!=null?b.top:Math.round(((r.rh||rh)-hh)/2);
       h+=`<i class="gb ${b.dk?'dk':''}" style="left:${cl}%;width:${cw}%;top:${top}px;height:${hh}px;background:${b.c}" title="${esc(b.t||'')}">${b.l&&cw>14?esc(b.l):''}</i>${b.l&&cw<=14?`<span class="gbo" style="left:${cl+cw}%;top:${top}px;height:${hh}px">${esc(b.l)}</span>`:''}`;});
     (r.ms||[]).forEach(m=>{const p=pcr(m.d);if(p<0||p>100)return;h+=`<i class="gd ${m.f?'f':''}" style="left:${p}%;top:${Math.round(((r.rh||rh)-12)/2)}px" title="${esc(m.t||'')}"></i>`;});h+='</div></div>';});
-  h+='</div></div>';host.innerHTML=h;host._g={t0,t1};if(o.click)$$('.gr.c',host).forEach(e=>e.onclick=ev=>{if(Date.now()-(window.__dgT||0)<350)return;o.click(o.rows[+e.dataset.i],ev);});if(o.drag)bindDrag(host,o.drag);}
+  h+='</div></div>';host.innerHTML=h;host._g={t0,t1};host._rows=o.rows;if(o.click)$$('.gr.c',host).forEach(e=>e.onclick=ev=>{if(Date.now()-(window.__dgT||0)<350)return;o.click(o.rows[+e.dataset.i],ev);});if(o.drag)bindDrag(host,o.drag);}
 const stationWin=(code,phs)=>{const l=AC.filter(a=>a.stn===code&&a.t==='T'&&phs.includes(a.ph));return l.length?[l.reduce((m,a)=>a.s<m?a.s:m,'9999'),l.reduce((m,a)=>a.f>m?a.f:m,'0000')]:null;};
 /* derived data */
 const lineShare=l=>DATA.line_val[l]/M.po;
 const invByMonthLine=()=>{const o={NSR:Array(36).fill(0),EWR:Array(36).fill(0),HHR:Array(36).fill(0)};DATA.events.forEach(e=>{const i=Math.min(35,monIdx(e.d));if(e.l==='ALL'){['NSR','EWR','HHR'].forEach(l=>o[l][i]+=e.a*lineShare(l));}else o[e.l][i]+=e.a;});return o;};
 
-/* ---------- what-if engine: drag bars, everything recalculates ---------- */
-const OV={};let STORD=null;const freezeOrd=()=>{if(!STORD)STORD=ST.slice().sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:0).map(s=>s.code);};const B0={a:AC.map(a=>({s:a.s,f:a.f,d:a.d})),s:ST.map(s=>({start:s.start,end:s.end,ph:JSON.parse(JSON.stringify(s.ph)),inv:s.inv.map(i=>i.d),cc:s.cc.slice(),pc:s.pc.slice()})),e:DATA.events.map(e=>e.d),im:JSON.parse(JSON.stringify(DATA.inv_m))};
+/* ---------- what-if engine: logic-driven (CPM) re-schedule ---------- */
+let STORD=null;const freezeOrd=()=>{if(!STORD)STORD=ST.slice().sort((a,b)=>a.start<b.start?-1:a.start>b.start?1:0).map(s=>s.code);};
+const DUR={},DEL={};   // edited durations (working days) and start delays per activity
+const B0={a:AC.map(a=>({s:a.s,f:a.f,d:a.d})),s:ST.map(s=>({start:s.start,end:s.end,ph:JSON.parse(JSON.stringify(s.ph)),inv:s.inv.map(i=>i.d),cc:s.cc.slice(),pc:s.pc.slice()})),e:DATA.events.map(e=>e.d),im:JSON.parse(JSON.stringify(DATA.inv_m)),prj:{cc:DATA.prj.cc.slice(),pc:DATA.prj.pc.slice()},key:{...DATA.key}};
 const HOL=new Set();DATA.holidays.forEach(([a,b])=>{let d=dd(a);const e=dd(b);while(d<=e){HOL.add(d.getTime());d=new Date(d.getTime()+864e5);}});
 const isoD=d=>d.toISOString().slice(0,10),isWD=d=>{const w=d.getUTCDay();return w<=4&&!HOL.has(d.getTime());};
 const snapWD=d=>{let x=new Date(d.getTime());let n=0;while(!isWD(x)&&n++<14)x=new Date(x.getTime()+864e5);return x;};
 const wdCount=(s,f)=>{let n=0;for(let d=dd(s),e=dd(f);d<=e;d=new Date(d.getTime()+864e5))if(isWD(d))n++;return n;};
 const daysBetween=(a,b)=>Math.round((dd(b)-dd(a))/864e5);
-function stIdx(code){return ST.findIndex(s=>s.code===code);}
+const WK=[];{let d=dd(M.ntp);while(WK.length<1900){if(isWD(d))WK.push(isoD(d));d=new Date(d.getTime()+864e5);}}
+const WI=new Map(WK.map((x,i)=>[x,i]));const wIdx=iso=>{const s=isoD(snapWD(dd(iso)));return WI.get(s);};
+const AIX=new Map(AC.map((a,i)=>[a.id,i]));
+const NET=AC.map(a=>a.pr.map(x=>{const m=x.match(/^(\S+) (FS|SS|FF|SF)(?:\+(-?\d+))?$/);return {p:AIX.get(m[1]),t:m[2],l:m[3]?+m[3]:0};}));
+const TOPO=(()=>{const o=[],seen=new Uint8Array(AC.length);const v=n=>{if(seen[n])return;seen[n]=1;NET[n].forEach(e=>v(e.p));o.push(n);};AC.forEach((_,i)=>v(i));return o;})();
+function cpmRun(){const n=AC.length,ES=new Array(n),EF=new Array(n);
+  TOPO.forEach(i=>{const a=AC[i];const dur=a.t==='T'?(DUR[a.id]!=null?DUR[a.id]:B0.a[i].d):0;let es=NET[i].length?-1e9:0;
+    NET[i].forEach(e=>{const l=e.l;if(e.t==='FS')es=Math.max(es,EF[e.p]+1+l);else if(e.t==='SS')es=Math.max(es,ES[e.p]+l);else if(e.t==='FF')es=Math.max(es,EF[e.p]+l-dur+1);else es=Math.max(es,ES[e.p]+l-dur+1);});
+    if(es<0)es=0;es+=(DEL[a.id]||0);if(es<0)es=0;ES[i]=es;EF[i]=es+dur-1;});
+  return {ES,EF};}
+const stIdx=code=>ST.findIndex(s=>s.code===code);
+const EVS={MS2:'E1200',MS3:'E1210',MS4:'P1100',MS5:'C2100',MS6:'T1100',MS7:'T3100'};
 function applyScenario(){
-  AC.forEach((a,i)=>{const b=B0.a[i];a.s=b.s;a.f=b.f;a.d=b.d;});
-  ST.forEach((s,i)=>{const b=B0.s[i];s.start=b.start;s.end=b.end;s.ph=JSON.parse(JSON.stringify(b.ph));s.inv.forEach((v,k)=>v.d=b.inv[k]);s.cc=b.cc.slice();s.pc=b.pc.slice();});
-  DATA.events.forEach((e,i)=>e.d=B0.e[i]);
-  Object.keys(OV).forEach(code=>{const o=OV[code],i=stIdx(code),b0=B0.s[i],bs=dd(b0.start);
-    const tr=x=>isoD(snapWD(new Date(bs.getTime()+o.shift*864e5+(dd(x)-bs)*o.k)));
-    const list=[];AC.forEach((a,j)=>{if(a.stn===code){a.s=tr(B0.a[j].s);a.f=tr(B0.a[j].f);a.d=a.t==='T'?Math.max(1,wdCount(a.s,a.f)):0;list.push(a);}});
-    const s=ST[i];s.start=list.reduce((m,a)=>a.s<m?a.s:m,'9999');s.end=list.reduce((m,a)=>a.f>m?a.f:m,'0000');
-    Object.keys(s.ph).forEach(p=>{const l=list.filter(a=>a.t==='T'&&a.ph===p);if(l.length)s.ph[p]=[l.reduce((m,a)=>a.s<m?a.s:m,'9999'),l.reduce((m,a)=>a.f>m?a.f:m,'0000')];});
-    s.inv.forEach((v,k)=>v.d=tr(b0.inv[k]));DATA.events.forEach((e,j)=>{if(e.c===code)e.d=tr(B0.e[j]);});
-    const cc=Array(36).fill(0),pc=Array(36).fill(0);
-    list.forEach(a=>{if(a.t!=='T'||!a.d)return;const days=[];for(let d=dd(a.s),e=dd(a.f);d<=e;d=new Date(d.getTime()+864e5))if(isWD(d))days.push(Math.max(0,Math.min(35,monIdx(isoD(d)))));
-      if(!days.length)days.push(Math.max(0,Math.min(35,monIdx(a.s))));days.forEach(m=>{cc[m]+=a.c/days.length;pc[m]+=a.p/days.length;});});
-    s.cc=cc.map(Math.round);s.pc=pc.map(Math.round);});
+  const {ES,EF}=cpmRun();
+  AC.forEach((a,i)=>{const dur=a.t==='T'?(DUR[a.id]!=null?DUR[a.id]:B0.a[i].d):0;
+    if(a.t==='T'){a.s=WK[ES[i]];a.f=WK[Math.max(ES[i],EF[i])];a.d=dur;}else if(a.t==='M'){a.s=a.f=WK[ES[i]];}else{a.s=a.f=WK[Math.max(0,EF[i])];}});
+  const cc0=new Map(),mon=iso=>Math.max(0,Math.min(35,monIdx(iso)));
+  const spread=(list)=>{const cc=Array(36).fill(0),pc=Array(36).fill(0);list.forEach(a=>{if(a.t!=='T'||!a.d)return;const days=[];for(let i=wIdx(a.s);i<=wIdx(a.f);i++)days.push(mon(WK[i]));if(!days.length)days.push(mon(a.s));days.forEach(m=>{cc[m]+=a.c/days.length;pc[m]+=a.p/days.length;});});return [cc.map(Math.round),pc.map(Math.round)];};
+  ST.forEach((s,i)=>{const list=AC.filter(a=>a.stn===s.code);
+    s.start=list.reduce((m,a)=>a.s<m?a.s:m,'9999');s.end=list.reduce((m,a)=>a.f>m?a.f:m,'0000');
+    s.ph=JSON.parse(JSON.stringify(B0.s[i].ph));Object.keys(s.ph).forEach(p=>{const l=list.filter(a=>a.t==='T'&&a.ph===p);if(l.length)s.ph[p]=[l.reduce((m,a)=>a.s<m?a.s:m,'9999'),l.reduce((m,a)=>a.f>m?a.f:m,'0000')];});
+    const[cc,pc]=spread(list);s.cc=cc;s.pc=pc;
+    s.inv.forEach(v=>{const a=ABY[s.code+'-'+EVS[v.ms]];if(a)v.d=a.s;});});
+  {const list=AC.filter(a=>a.stn==='PRJ');const[cc,pc]=spread(list);DATA.prj.cc=cc;DATA.prj.pc=pc;}
+  DATA.events.forEach(e=>{if(e.c==='PRJ')e.d=ABY['PRJ-M1100'].s;else{const a=ABY[e.c+'-'+EVS[e.ms]];if(a)e.d=a.s;}});
   Object.keys(DATA.inv_m).forEach(k=>DATA.inv_m[k]=Array(36).fill(0));
-  DATA.events.forEach(e=>{DATA.inv_m[e.ms][Math.max(0,Math.min(35,monIdx(e.d)))]+=e.a;});
+  DATA.events.forEach(e=>{DATA.inv_m[e.ms][mon(e.d)]+=e.a;});
+  DATA.key.m1100=ABY['PRJ-M1100'].s;DATA.key.m1150=ABY['PRJ-M1150'].s;DATA.key.m2100=ABY['PRJ-M2100'].s;DATA.key.m1250=ABY['PRJ-M1250'].s;DATA.key.mx99=ABY['PRJ-MX99'].s;
   SL.forEach((x,i)=>{if(i!==cur)x.done=false;});
 }
-function scnInfo(){const n=Object.keys(OV).length;const last=ST.reduce((m,s)=>s.end>m?s.end:m,'0000');const d=daysBetween(M.end,last);return {n,last,d,ord:!!STORD};}
-function resetScenario(){STORD=null;Object.keys(OV).forEach(k=>delete OV[k]);applyScenario();}
+function scnInfo(){const n=new Set([...Object.keys(DUR),...Object.keys(DEL)]).size;const last=ST.reduce((m,s)=>s.end>m?s.end:m,'0000');const d=daysBetween(M.end,last);return {n,last,d,ord:!!STORD};}
+function resetScenario(){STORD=null;Object.keys(DUR).forEach(k=>delete DUR[k]);Object.keys(DEL).forEach(k=>delete DEL[k]);applyScenario();}
+/* bind dragging on a rendered gantt: move (delay), resize (duration), reorder stations */
 function bindDrag(host,after){
-  const rows=$$('.gr[data-drag]',host);if(!rows.length)return;const g=host._g;
-  rows.forEach(row=>{const code=row.dataset.drag,gt=$('.gt',row);
-    const down=(ev,mode)=>{ev.preventDefault();ev.stopPropagation();const x0=ev.clientX,y0=ev.clientY,W=gt.clientWidth,spanD=(g.t1-g.t0)/864e5;const bars=[...$$('.gb,.gbo,.gd',gt)];const st0=ST[stIdx(code)];const dur0=Math.max(1,daysBetween(st0.start,st0.end));
-      const bs=[...$$('.gb',gt)].map(b=>({b,w:b.offsetWidth,t:b.textContent}));const lab=bs.slice().sort((x,y)=>y.w-x.w)[0];const tip=document.createElement('span');tip.className='dgtip';gt.appendChild(tip);const sh=(ns,ne)=>{if(lab){tip.textContent=fD(ns)+'  \u2192  '+fD(ne)+'  \u00b7  '+(daysBetween(ns,ne)/30.4375).toFixed(1)+' months';const L=lab.b.offsetLeft+(mode==='h'?days/spanD*W:0);tip.style.left=Math.max(0,Math.min(L,W-tip.offsetWidth))+'px';tip.style.top=(lab.b.offsetTop-24)+'px';}};let moved=false,days=0,k=1;document.body.classList.add('dgg');
+  const rowsM=host._rows||[];const g=host._g;
+  $$('.gr[data-dgi]',host).forEach(row=>{const meta=rowsM[+row.dataset.dgi].dg,gt=$('.gt',row);if(!meta||!gt)return;
+    const ids=meta.ids.filter(id=>AIX.has(id));if(!ids.length)return;
+    const idset=new Set(ids.map(id=>AIX.get(id)));
+    const roots=ids.filter(id=>!NET[AIX.get(id)].some(e=>idset.has(e.p)));
+    const down=(ev,mode)=>{ev.preventDefault();ev.stopPropagation();const x0=ev.clientX,y0=ev.clientY,W=gt.clientWidth,spanD=(g.t1-g.t0)/864e5;
+      const bars=[...$$('.gb,.gbo,.gd',gt)];const bs=[...$$('.gb',gt)].map(b=>({b,w:b.offsetWidth}));const lab=bs.slice().sort((x,y)=>y.w-x.w)[0];
+      const T=ids.map(id=>ABY[id]).filter(a=>a.t==='T');const s0=T.length?T.reduce((m,a)=>a.s<m?a.s:m,'9999'):ABY[ids[0]].s,f0=T.length?T.reduce((m,a)=>a.f>m?a.f:m,'0000'):s0;const dur0=Math.max(1,daysBetween(s0,f0)+1);
+      const tip=document.createElement('span');tip.className='dgtip';gt.appendChild(tip);
+      const sh=(ns,ne)=>{if(lab){tip.textContent=fD(ns)+'  →  '+fD(ne)+'  ·  '+(daysBetween(ns,ne)/30.4375).toFixed(1)+' months';const L=lab.b.offsetLeft+(mode==='h'?days/spanD*W:0);tip.style.left=Math.max(0,Math.min(L,W-tip.offsetWidth))+'px';tip.style.top=(lab.b.offsetTop-24)+'px';}};
+      let moved=false,days=0,k=1,addWD=0;document.body.classList.add('dgg');
       const mv=e=>{let dx=e.clientX-x0,dy=e.clientY-y0;if(window.__rot){const t=dx;dx=dy;dy=-t;}if(Math.abs(dx)+Math.abs(dy)>3)moved=true;
-        if(mode==='h'){days=Math.round(dx/W*spanD);bars.forEach(b=>b.style.transform='translateX('+(days/spanD*W)+'px)');bars.forEach(b=>b.classList.add('dmv'));sh(isoD(snapWD(new Date(dd(st0.start).getTime()+days*864e5))),isoD(snapWD(new Date(dd(st0.end).getTime()+days*864e5))));}
-        else if(mode==='r'){const nd=Math.max(Math.round(dur0*.3),dur0+Math.round(dx/W*spanD));k=nd/dur0;bs.forEach(o=>o.b.style.width=Math.max(4,o.w*k)+'px');sh(st0.start,isoD(snapWD(new Date(dd(st0.start).getTime()+nd*864e5))));}
+        if(mode==='h'){days=Math.round(dx/W*spanD);bars.forEach(b=>{b.style.transform='translateX('+(days/spanD*W)+'px)';b.classList.add('dmv');});sh(isoD(snapWD(new Date(dd(s0).getTime()+days*864e5))),isoD(snapWD(new Date(dd(f0).getTime()+days*864e5))));}
+        else if(mode==='r'){const dd_=Math.round(dx/W*spanD);addWD=Math.round(dd_*5/7);const nd=Math.max(1,dur0+dd_);k=nd/dur0;bs.forEach(o=>o.b.style.width=Math.max(4,o.w*k)+'px');sh(s0,isoD(snapWD(new Date(dd(s0).getTime()+(nd-1)*864e5))));}
         else{const over=document.elementFromPoint(e.clientX,e.clientY);const tr=over&&over.closest&&over.closest('.gr[data-drag]');$$('.gr.dov',host).forEach(x=>x.classList.remove('dov'));row.classList.add('dsrc');if(tr&&tr!==row&&tr.dataset.par===row.dataset.par)tr.classList.add('dov');}};
       const up=e=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);removeEventListener('pointercancel',up);document.body.classList.remove('dgg');window.__dgT=Date.now();tip.remove();
-        if(!moved){bars.forEach(b=>{b.style.transform='';b.classList.remove('dmv');});tip.remove();row.classList.remove('dsrc');return;}
+        if(!moved){bars.forEach(b=>{b.style.transform='';b.classList.remove('dmv');});row.classList.remove('dsrc');return;}
         freezeOrd();
-        if(mode==='h'||mode==='r'){const o=OV[code]||(OV[code]={shift:0,k:1});if(mode==='h')o.shift+=days;else o.k=Math.max(.3,Math.min(3,o.k*k));}
+        if(mode==='h'){const target=wIdx(isoD(new Date(dd(s0).getTime()+days*864e5)));const delta=target-wIdx(s0);if(delta)roots.forEach(id=>{DEL[id]=(DEL[id]||0)+delta;});}
+        else if(mode==='r'){const fixed=id=>{const a=ABY[id];return a.rs==='SAR'&&a.sa==='Approval';};const TT=ids.filter(id=>ABY[id].t==='T');const curD=id=>DUR[id]!=null?DUR[id]:ABY[id].d;
+          const scal=TT.filter(id=>!fixed(id));if(scal.length){const span=wIdx(f0)-wIdx(s0)+1,fx=TT.filter(fixed).reduce((q,id)=>q+curD(id),0);const base=Math.max(1,span-fx);
+            const kk=scal.length===1&&TT.length===1?null:Math.max(.05,(base+addWD)/base);
+            scal.forEach(id=>{const c=curD(id);const nd=kk==null?Math.max(1,c+addWD):Math.max(1,Math.round(c*kk));if(nd!==B0.a[AIX.get(id)].d)DUR[id]=nd;else delete DUR[id];});}}
         else{const over=document.elementFromPoint(e.clientX,e.clientY);const tr=over&&over.closest&&over.closest('.gr[data-drag]');
-          if(tr&&tr!==row&&tr.dataset.par===row.dataset.par){const sib=[...$$('.gr[data-drag]',host)].filter(x=>x.dataset.par===row.dataset.par).map(x=>x.dataset.drag);const from=sib.indexOf(code),to=sib.indexOf(tr.dataset.drag);sib.splice(from,1);sib.splice(to,0,code);
+          if(tr&&tr!==row&&tr.dataset.par===row.dataset.par){const code=row.dataset.drag;const sib=[...$$('.gr[data-drag]',host)].filter(x=>x.dataset.par===row.dataset.par).map(x=>x.dataset.drag);const from=sib.indexOf(code),to=sib.indexOf(tr.dataset.drag);sib.splice(from,1);sib.splice(to,0,code);
             const pos=sib.map(c=>STORD.indexOf(c)).sort((x,y)=>x-y);sib.forEach((c,i)=>{STORD[pos[i]]=c;});}}
         applyScenario();after();};
       addEventListener('pointermove',mv);addEventListener('pointerup',up);addEventListener('pointercancel',up);};
@@ -339,11 +364,11 @@ slide('sched',el=>{
   const render=()=>{
     const f=SCH.F;const cnt=(set,all)=>set.size<all?`<span class="bd">${set.size}</span>`:'';const nAct=(f.lines.size<4)+(f.stns.size<14)+(f.ph.size<5)+(f.resp.size<4)+(f.type.size<4)+(f.fl!=null)+(f.from!==0||f.to!==36)+(!!f.q);
     tb.innerHTML=`<div class="tr"><div class="tabs2">${[['sched','Schedule'],['prog','Progress curves'],['pay','Payments and milestones']].map(([k,t])=>`<button data-vw="${k}" class="${SCH.view===k?'on':''}">${t}</button>`).join('')}</div>
-      <select id="qv" style="width:150px"><option value="">Quick views…</option>${QV.map(q=>`<option value="${q[0]}">${q[1]}</option>`).join('')}</select><span class="dn" style="margin-left:6px" title="Drag a station bar to move it, drag its right edge to change the duration, drag the grip to reorder">Drag bars to simulate &middot; &#8942;&#8942; reorder</span></div>
+      <select id="qv" style="width:150px"><option value="">Quick views…</option>${QV.map(q=>`<option value="${q[0]}">${q[1]}</option>`).join('')}</select><span class="dn" style="margin-left:6px" title="Drag any bar to move it, drag its right edge to change the duration; successors follow the logic. Drag the grip to reorder stations.">Drag any bar or its right edge &middot; &#8942;&#8942; reorder</span></div>
     <div class="tr"><span class="sg"><b>Group by</b><button data-g="wbs" class="chip ${SCH.group==='wbs'?'on':''}">EPC</button><button data-g="stn" class="chip ${SCH.group==='stn'?'on':''}">Line</button><button data-g="sta" class="chip ${SCH.group==='sta'?'on':''}">Station</button></span>
       <button class="chip ms" data-m="stns">Stations ${cnt(f.stns,14)} ▾</button><button class="chip ms" data-m="ph">Programme phase ${cnt(f.ph,5)} ▾</button>
       <button class="chip ${SCH.open?'on':''}" id="fto" style="margin-left:auto">Filters and levels${nAct?`<span class="bd">${nAct}</span>`:''} ${SCH.open?'▴':'▾'}</button><button class="chip" id="rst">Reset</button></div>
-    ${(()=>{const q=scnInfo();return q.n||q.ord?`<div class="tr" id="scn"><b style="color:#8A6D1F">Scenario</b><span>${q.ord?'Station order set by you. ':''}${q.n?q.n+' station'+(q.n>1?'s':'')+' changed. ':''}Last station accepted ${fD(q.last)}${q.d>0?` <b style="color:${C.red}">(${q.d} days after the contract end)</b>`:q.d<0?` (${-q.d} days before the contract end)`:''}. Curves, payments and dashboard follow this scenario.</span><button class="chip" id="scr" style="margin-left:auto">Reset scenario</button></div>`:'';})()}
+    ${(()=>{const q=scnInfo();return q.n||q.ord?`<div class="tr" id="scn"><b style="color:#8A6D1F">Scenario</b><span>${q.ord?'Station order set by you. ':''}${q.n?q.n+' activit'+(q.n>1?'ies':'y')+' edited, all successors re-scheduled by logic. ':''}Last station accepted ${fD(q.last)}${q.d>0?` <b style="color:${C.red}">(${q.d} days after the contract end)</b>`:q.d<0?` (${-q.d} days before the contract end)`:''}. Curves, payments and dashboard follow this scenario.</span><button class="chip" id="scr" style="margin-left:auto">Reset scenario</button></div>`:'';})()}
     <div id="more" style="display:${SCH.open?'flex':'none'};flex-direction:column;gap:3px"><div class="tr"><span class="sg"><b>Level</b>${[1,2,3,4,5,6].map(n=>`<button data-lv="${n}" class="chip ${SCH.LV===n||(n===6&&SCH.LV>=6)?'on':''}">${n===6?'Activities':'L'+n}</button>`).join('')}</span>
       <button class="chip" id="xa">Expand</button><button class="chip" id="ca">Collapse</button>
       <span class="sg"><b>Columns</b><select id="cl" style="width:104px"><option value="dates" ${SCH.cols==='dates'?'selected':''}>Dates</option><option value="cost" ${SCH.cols==='cost'?'selected':''}>Cost</option><option value="none" ${SCH.cols==='none'?'selected':''}>None</option></select></span>
@@ -373,11 +398,11 @@ slide('sched',el=>{
     const sortKids=n=>n.kids.sort((a,b)=>(a.id.endsWith('|MS')?1:0)-(b.id.endsWith('|MS')?1:0)||(STORD&&a.id.startsWith('st:')&&b.id.startsWith('st:')?STORD.indexOf(a.id.slice(3))-STORD.indexOf(b.id.slice(3)):0)||(a.id.includes('|')&&b.id.includes('|')?a.ord-b.ord:0)||(a.s<b.s?-1:a.s>b.s?1:a.ord-b.ord||(a.label<b.label?-1:1)));
     const dcol=n=>SCH.cols==='dates'?[fD(n.s).slice(0,6)+fD(n.s).slice(-2),fD(n.f).slice(0,6)+fD(n.f).slice(-2),''] :SCH.cols==='cost'?[fN(n.c),fN(n.p)]:[];
     const leafRows=n=>{const A=n.acts.slice().sort((a,b)=>a.s<b.s?-1:a.s>b.s?1:a.id<b.id?-1:1);
-      const ar=a=>({lv:2,ind:n.level,label:'<span style="color:'+C.slate+';font-size:10.5px">A</span> '+esc(a.n),sub:(a.stn==='PRJ'?'':esc(sn(a))+' · ')+a.id+(a.t==='T'?' · '+a.d+' d':'')+(a.c>0?' · SAR '+fN(a.c):''),cols:SCH.cols==='dates'?[fD(a.s).slice(0,6)+fD(a.s).slice(-2),a.t==='T'?fD(a.f).slice(0,6)+fD(a.f).slice(-2):'',a.t==='T'?a.d+'':'']:SCH.cols==='cost'?[fN(a.c),fN(a.p)]:[],bars:a.t==='T'?[{s:a.s,f:a.f,c:PH[a.ph]?PH[a.ph][1]:C.slate,dk:PH[a.ph]&&PH[a.ph][2],h:11,t:a.n+' · '+fD(a.s)+' to '+fD(a.f)}]:[],ms:a.t!=='T'?[{d:a.s,f:a.t==='F',t:a.n+' · '+fD(a.s)}]:[],click:()=>actDrawer(a)});
+      const ar=a=>({dg:a.t==='T'?{ids:[a.id]}:null,lv:2,ind:n.level,label:'<span style="color:'+C.slate+';font-size:10.5px">A</span> '+esc(a.n),sub:(a.stn==='PRJ'?'':esc(sn(a))+' · ')+a.id+(a.t==='T'?' · '+a.d+' d':'')+(a.c>0?' · SAR '+fN(a.c):''),cols:SCH.cols==='dates'?[fD(a.s).slice(0,6)+fD(a.s).slice(-2),a.t==='T'?fD(a.f).slice(0,6)+fD(a.f).slice(-2):'',a.t==='T'?a.d+'':'']:SCH.cols==='cost'?[fN(a.c),fN(a.p)]:[],bars:a.t==='T'?[{s:a.s,f:a.f,c:PH[a.ph]?PH[a.ph][1]:C.slate,dk:PH[a.ph]&&PH[a.ph][2],h:11,t:a.n+' · '+fD(a.s)+' to '+fD(a.f)}]:[],ms:a.t!=='T'?[{d:a.s,f:a.t==='F',t:a.n+' · '+fD(a.s)}]:[],click:()=>actDrawer(a)});
       if(SCH.detail!=='sum'||SCH.group==='wbs'){A.forEach(a=>rows.push(ar(a)));return;}
       const g=new Map();A.forEach(a=>{const[k,o]=grpOf(a);if(!g.has(k))g.set(k,{k,o,l:[]});g.get(k).l.push(a);});
       [...g.values()].sort((x,y)=>x.o-y.o||(x.l[0].s<y.l[0].s?-1:1)).forEach(G=>{const T_=G.l.filter(a=>a.t==='T'),M_=G.l.filter(a=>a.t!=='T');const s0=G.l.reduce((m,a)=>a.s<m?a.s:m,'9999'),f0=G.l.reduce((m,a)=>a.f>m?a.f:m,'0000');const a0=T_[0]||M_[0];
-        rows.push({lv:2,ind:n.level,label:esc(G.k),sub:(a0.stn==='PRJ'?'':esc(sn(a0))+' · ')+(M_.length&&!T_.length?M_.length+' milestones':fD(s0)+' to '+fD(f0))+(G.l.reduce((x,a)=>x+a.c,0)>0?' · SAR '+fM(G.l.reduce((x,a)=>x+a.c,0))+'M':''),
+        rows.push({dg:T_.length?{ids:T_.map(a=>a.id)}:null,lv:2,ind:n.level,label:esc(G.k),sub:(a0.stn==='PRJ'?'':esc(sn(a0))+' · ')+(M_.length&&!T_.length?M_.length+' milestones':fD(s0)+' to '+fD(f0))+(G.l.reduce((x,a)=>x+a.c,0)>0?' · SAR '+fM(G.l.reduce((x,a)=>x+a.c,0))+'M':''),
           cols:SCH.cols==='dates'?[fD(s0).slice(0,6)+fD(s0).slice(-2),T_.length?fD(f0).slice(0,6)+fD(f0).slice(-2):'','']:SCH.cols==='cost'?[fN(G.l.reduce((x,a)=>x+a.c,0)),fN(G.l.reduce((x,a)=>x+a.p,0))]:[],
           bars:T_.length?[{s:T_.reduce((m,a)=>a.s<m?a.s:m,'9999'),f:T_.reduce((m,a)=>a.f>m?a.f:m,'0000'),c:PH[a0.ph]?PH[a0.ph][1]:C.slate,dk:PH[a0.ph]&&PH[a0.ph][2],h:12,t:G.k+': '+fD(s0)+' to '+fD(f0)}]:[],
           ms:M_.map(a=>({d:a.s,f:a.t==='F',t:a.n+' · '+fD(a.s)})),click:()=>drawer(G.k,G.l.length+' activities · '+fD(s0)+' to '+fD(f0),actTable(G.l))});});};
@@ -386,7 +411,8 @@ slide('sched',el=>{
       const val=[...n.stns].reduce((a,c)=>a+SBY[c].val,0);const stc=n.id.startsWith('st:')?SBY[n.id.slice(3)]:null;
       const sub=n.id==='prjc'?'rolling per station; 1-year defects liability · SAR '+fM(n.c)+'M':n.level===1?n.stns.size+' stations · SAR '+fM(val)+'M':n.id.startsWith('pk:')?n.stns.size+(['pk:NSR','pk:EWR','pk:HHR'].includes(n.id)?' other':'')+(n.stns.size===1?' station':' stations')+' · SAR '+fM(val)+'M':stc?stc.line+' · SAR '+fM(stc.val)+'M · '+n.cnt+' activities':((n.id.includes('|')&&n.stns.size===1?esc(SBY[[...n.stns][0]].name)+' · ':'')+(n.sub?n.sub+' · ':'')+n.cnt+' activities'+(n.c>0?' · SAR '+fM(n.c)+'M':''));
       const ms=[];
-      rows.push({drag:n.id.startsWith('st:')?n.id.slice(3):null,par:n.par?n.par.id:'',lv:lvT,big,rh:big?(SCH.LV<=2?48:36):undefined,ind:big?n.level-1:n.level-1,label:`${has?(open?'▾ ':'▸ '):'&nbsp;&nbsp; '}${big?'':`<b style="color:${C.blue};font-size:10.5px">L${n.level}</b> `}${n.label}`,sub,cols:dcol(n),
+      const colT=x=>x.acts.map(a=>a.id).concat(...x.kids.map(colT));
+      rows.push({dg:(n.level>1&&!n.id.startsWith('pk:')&&n.id!=='prjc')?{ids:colT(n)}:null,drag:n.id.startsWith('st:')?n.id.slice(3):null,par:n.par?n.par.id:'',lv:lvT,big,rh:big?(SCH.LV<=2?48:36):undefined,ind:big?n.level-1:n.level-1,label:`${has?(open?'▾ ':'▸ '):'&nbsp;&nbsp; '}${big?'':`<b style="color:${C.blue};font-size:10.5px">L${n.level}</b> `}${n.label}`,sub,cols:dcol(n),
         bars:(()=>{const Fh=SCH.F;const narrow=Fh.ph.size<5||Fh.type.size<4||Fh.fl!=null;if(big&&narrow&&n.id.startsWith('pk:')&&n.segs.size>1){const u=new Map();[...n.segs.values()].forEach(g=>u.set(g[0]+'|'+g[1],g));const sg=[...u.values()].sort((x,y)=>x[0]<y[0]?-1:1);const avg=[...n.segs.values()].reduce((q,g)=>q+(dd(g[1])-dd(g[0]))/864e5/30.4375,0)/n.segs.size;return sg.map((g,i)=>({s:g[0],f:g[1],c:col,dk:col===C.yellow,h:20,l:i===sg.length-1?n.segs.size+' stations, about '+avg.toFixed(1)+' months each':'',t:fD(g[0])+' to '+fD(g[1])}));}return [(()=>{let bs=n.s,bf=n.f;if(n.id==='prjc'){const ends=ST.filter(x=>SCH.F.lines.has(x.line)&&SCH.F.stns.has(x.code)).map(x=>x.end).sort();if(ends.length)bs=ends[0];bf=M.end;}return {s:bs,f:bf,c:big?col:C.black,h:big?20:6,dk:big&&col===C.yellow,l:big?(n.level===1?'NTP at M0, term ends M36':'M'+mFrac(bs).toFixed(1)+' to M'+mFrac(bf).toFixed(1)):'',t:fD(bs)+' to '+fD(bf)};})()];})(),ms,
         lclick:has?()=>{if(SCH.flip.has(n.id))SCH.flip.delete(n.id);else SCH.flip.add(n.id);const st=$('#sc',el).scrollTop;draw();$('#sc',el).scrollTop=st;}:null,
         click:()=>{const l=[];const grab=x=>{x.acts.forEach(a=>l.push(a));x.kids.forEach(grab);};grab(n);l.sort((a,b)=>a.s<b.s?-1:1);drawer('L'+n.level+' · '+n.label.replace(/<[^>]+>/g,''),l.length+' activities · '+fD(n.s)+' to '+fD(n.f)+' · cost SAR '+fN(n.c),actTable(l.slice(0,400))+(l.length>400?'<p class="dn">First 400 of '+l.length+' activities; narrow the filters for the rest.</p>':''));}});
