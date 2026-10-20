@@ -198,7 +198,7 @@ for n_ in meta['order']:
 # ---------------------------------------------------------------- Summary first sheet
 wsu = wb.create_sheet('Summary', 0)
 wsu['A1'] = PROJECT_NAME + ' | ' + REVISION + ': baseline schedule, cost loading and BOQ mapping'; wsu['A1'].font = Font(name='Calibri', bold=True, size=15, color=BLUE)
-lines = [('Project number and name', PROJECT_NAME), ('Source of cost', 'Draft contract with ETECHS (22 Jan 2024): Annex 3 price table (Revised-02) and clause 15 payment milestones'),
+lines = [('Project number and name', PROJECT_NAME), ('Source of cost', 'Signed contract with ETECHS (1 November 2026): Annex 3 price table (Revised-02) and clause 15 payment milestones'),
          ('Contract price', PO), ('Project start (NTP milestone)', START), ('Contract term end (36 months)', TERM_END),
          ('Activities', len([1 for a in ACTS.values()])), ('Tasks (2 resources each)', len([1 for a in ACTS.values() if a.typ == "TT_Task"])), ('Milestones', len([1 for a in ACTS.values() if a.typ != "TT_Task"])),
          ('Cost loaded in P6 (SAR)', f'=BOQ_Mapping!N{last_map+1}'), ('Difference to contract price', f'=B11-B5'), ('Progress points loaded', f'=BOQ_Mapping!R{last_map+1}'),

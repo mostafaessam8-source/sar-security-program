@@ -102,7 +102,7 @@ def stn_params(s):
                 civil=round(20 + civ / 12000),                           # civil: 20 days + 1 day per SAR 12k of civil works (per crew)
                 inst=round(15 + cams / (3 * crews)),                     # installation: 15 days + 3 cameras per crew-day
                 sat=round(10 + cams / 30),                               # SAT: 10 days + 30 cameras per day
-                train=10, trial=30, final=15)
+                train=10, trial=30, final=22)      # taking-over: SAR issues the certificate within 30 days of the application (clause 12.3)
 for s in ST.values():
     s['p'] = stn_params(s)
 
